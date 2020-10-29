@@ -38,7 +38,7 @@ function InConnection(prot, minport, maxport) {
             conn = new quicIO.in(cf, kf);
             break;
         default:
-            prot = "sctp";
+            protocol = "sctp";
             conn = new SctpIn();
             break;
     }
@@ -124,13 +124,14 @@ module.exports = function() {
         var prot = internalOpt.protocol;
         var minport = internalOpt.minport || 0;
         var maxport = internalOpt.maxport || 0;
+        var prepared_conn = preparedSet[connId];
 
-        if (preparedSet[connId]) {
+        if (prepared_conn) {
             log.warn('Internal Connection already prepared:', connId);
             // FIXME: Correct work flow should not reach here, when a connection
             // is in use, it should not be created again. we should ensure the
             // right call sequence in upper layer.
-            return preparedSet[connId].connection.getListeningPort();
+            return prepared_conn.connection.getListeningPort();
         }
         var conn = (direction === 'in')? InConnection(prot, minport, maxport) : OutConnection(prot, minport, maxport);
 
@@ -140,30 +141,32 @@ module.exports = function() {
 
     // Return the created connections
     that.fetch = function (connId, direction) {
-        if (!preparedSet[connId]) {
+        var prepared_conn = preparedSet[connId];
+        if (!prepared_conn) {
             log.error('Internal Connection not created for fetch:', connId);
             return null;
         }
-        if (preparedSet[connId].direction != direction) {
+        if (prepared_conn.direction != direction) {
             log.error('Created connection direction not match for fetch:', connId);
             return null;
         }
 
-        return preparedSet[connId].connection;
+        return prepared_conn.connection;
     };
 
     // Destroy the connection created
     that.destroy = function (connId, direction) {
-        if (!preparedSet[connId]) {
+        var prepared_conn = preparedSet[connId];
+        if (!prepared_conn) {
             log.warn('Internal Connection not created for destroy:', connId);
             return false;
         }
-        if (preparedSet[connId].direction != direction) {
+        if (prepared_conn.direction != direction) {
             log.error('Created connection direction not match for destroy:', connId);
             return false;
         }
 
-        preparedSet[connId].connection.destroy();
+        prepared_conn.connection.destroy();
         delete preparedSet[connId];
     };
 

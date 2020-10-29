@@ -21,10 +21,10 @@ check_proxy(){
 }
 
 install_fdkaac(){
-  local VERSION="0.1.6"
+  local VERSION="2.0.1"
   local SRC="fdk-aac-${VERSION}.tar.gz"
   local SRC_URL="http://sourceforge.net/projects/opencore-amr/files/fdk-aac/${SRC}/download"
-  local SRC_MD5SUM="13c04c5f4f13f4c7414c95d7fcdea50f"
+  local SRC_MD5SUM="e8b0b38e837df455b8a1ba75417ff0ad"
 
   local LIST_LIBS=`ls ${PREFIX_DIR}/lib/libfdk* 2>/dev/null`
   $INCR_INSTALL && [[ ! -z $LIST_LIBS ]] && echo "fdkaac already installed." && return 0
@@ -176,9 +176,9 @@ install_openh264(){
   local LIST_LIBS=`ls ${ROOT}/third_party/openh264/libopenh264* 2>/dev/null`
   $INCR_INSTALL && [[ ! -z $LIST_LIBS ]] && echo "openh264 already installed." && return 0
 
-  MAJOR=1
-  MINOR=7
-  SOVER=4
+  MAJOR=2
+  MINOR=1
+  SOVER=6
 
   rm $ROOT/third_party/openh264 -rf
   mkdir $ROOT/third_party/openh264
@@ -309,7 +309,7 @@ install_quic(){
 }
 
 install_nicer(){
-  local COMMIT="24d88e95e18d7948f5892d04589acce3cc9a5880"
+  local COMMIT="3b4a3e2313e4d136e2ddb4ef031be06db72f9a04"
   pushd ${ROOT}/third_party >/dev/null
   rm -rf nICEr
   git clone https://github.com/lynckia/nICEr.git
@@ -327,10 +327,10 @@ install_libsrtp2(){
 
   if [ -d $LIB_DIR ]; then
     cd $LIB_DIR
-    rm -rf libsrtp-2.1.0
-    curl -o libsrtp-2.1.0.tar.gz https://codeload.github.com/cisco/libsrtp/tar.gz/v2.1.0
-    tar -zxvf libsrtp-2.1.0.tar.gz
-    cd libsrtp-2.1.0
+    rm -rf libsrtp-2.3.0
+    curl -o libsrtp-2.3.0.tar.gz https://codeload.github.com/cisco/libsrtp/tar.gz/v2.3.0
+    tar -zxvf libsrtp-2.3.0.tar.gz
+    cd libsrtp-2.3.0
     CFLAGS="-fPIC" ./configure --enable-openssl --prefix=$PREFIX_DIR --with-openssl-dir=$PREFIX_DIR
     make $FAST_MAKE -s V=0 && make uninstall && make install
     cd $CURRENT_DIR
@@ -383,7 +383,7 @@ install_libre() {
     rm -rf re
     git clone https://github.com/creytiv/re.git
     pushd re >/dev/null
-    git checkout v0.5.0
+    #git checkout v0.5.0
     make SYSROOT_ALT=${PREFIX_DIR} RELEASE=1
     make install SYSROOT_ALT=${PREFIX_DIR} RELEASE=1 PREFIX=${PREFIX_DIR}
     popd >/dev/null
@@ -399,7 +399,7 @@ install_usrsctp() {
   $INCR_INSTALL && [[ ! -z $LIST_LIBS ]] && echo "usrsctp already installed." && return 0
 
   if [ -d $LIB_DIR ]; then
-    local USRSCTP_VERSION="30d7f1bd0b58499e1e1f2415e84d76d951665dc8"
+    local USRSCTP_VERSION="862f4f5c561bc12b0b9f80b302d53736c6b2507e"
     local USRSCTP_FILE="${USRSCTP_VERSION}.tar.gz"
     local USRSCTP_EXTRACT="usrsctp-${USRSCTP_VERSION}"
     local USRSCTP_URL="https://github.com/sctplab/usrsctp/archive/${USRSCTP_FILE}"
@@ -438,7 +438,7 @@ install_glib() {
 
 install_gcc(){
   if [ -d $LIB_DIR ]; then
-    local VERSION="4.8.4"
+    local VERSION="4.8.5"
     cd $LIB_DIR
     wget -c http://ftp.gnu.org/gnu/gcc/gcc-${VERSION}/gcc-${VERSION}.tar.bz2
 
@@ -465,7 +465,7 @@ install_gcc(){
 
 install_json_hpp() {
   if [ -d $LIB_DIR ]; then
-    local DOWNLOAD_JSON_LINK="https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp"
+    local DOWNLOAD_JSON_LINK="https://github.com/nlohmann/json/releases/download/v3.9.1/json.hpp"
     pushd $LIB_DIR >/dev/null
     wget -c ${DOWNLOAD_JSON_LINK}
     mkdir -p ${PREFIX_DIR}/include
@@ -483,7 +483,7 @@ install_svt_hevc(){
     git clone https://github.com/intel/SVT-HEVC.git
 
     pushd SVT-HEVC >/dev/null
-    git checkout v1.3.0
+    git checkout v1.5.0
 
     mkdir build
     pushd build >/dev/null

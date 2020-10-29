@@ -29,7 +29,6 @@ static void uag_destructor(void *arg)
 	uag->sock     = mem_deref(uag->sock);
 	uag->lsnr     = mem_deref(uag->lsnr);
 	uag->sip      = mem_deref(uag->sip);
-	/*uag->sip      = mem_deref(uag->sip);*/
 	uag->ua_cur   = mem_deref(uag->ua_cur);
 
 #ifdef USE_TLS
@@ -416,15 +415,14 @@ const char *uag_event_str(enum ua_event ev)
  */
 struct ua *uag_find(const struct uag *uag, const struct pl *cuser)
 {
-	
 	struct ua *ua = uag->ua_cur;
 
 	if (0 == pl_strcasecmp(cuser, ua->cuser))
 		return ua;
 	else if (0 == pl_casecmp(cuser, &ua->acc->luri.user))
 		return ua;
-  else
-    return NULL;
+	else
+		return NULL;
 }
 
 
@@ -439,7 +437,7 @@ struct ua *uag_find_aor(const struct uag *uag, const char *aor)
 {
 	struct ua *ua = uag->ua_cur;
 
-	if (str_isset(aor) && str_cmp(ua->acc->aor, aor))
+	if (str_isset(aor) && !str_cmp(ua->acc->aor, aor))
 		return ua;
 	else
 		return NULL;

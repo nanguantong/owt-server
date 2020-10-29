@@ -57,7 +57,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         rpcClient = spec.rpcClient,
         config = spec.config,
         room_id = spec.room,
-	origin = spec.origin,
+        origin = spec.origin,
         selfRpcId = spec.selfRpcId,
         enable_audio_transcoding = config.transcoding && !!config.transcoding.audio,
         enable_video_transcoding = config.transcoding && !!config.transcoding.video,
@@ -174,16 +174,15 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var enableAVCoordination = function (view) {
         log.debug('enableAVCoordination');
-        if (!mix_views[view])
+        var mix_view = mix_views[view];
+        if (!mix_view)
             return;
 
-        var audio_mixer = mix_views[view].audio.mixer;
-        var video_mixer = mix_views[view].video.mixer;
         var view_config = getViewMixingConfig(view);
-        if (audio_mixer && video_mixer && view_config && view_config.audio && view_config.audio.vad) {
+        if (mix_view.audio.mixer && mix_view.video.mixer && view_config && view_config.audio && view_config.audio.vad) {
             makeRPC(
                 rpcClient,
-                terminals[audio_mixer].locality.node,
+                terminals[mix_view.audio.mixer].locality.node,
                 'enableVAD',
                 [1000]);
         }
@@ -191,16 +190,15 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var resetVAD = function (view) {
         log.debug('resetVAD', view);
-        if (!mix_views[view])
+        var mix_view = mix_views[view];
+        if (!mix_view)
             return;
 
-        var audio_mixer = mix_views[view].audio.mixer;
-        var video_mixer = mix_views[view].video.mixer;
         var view_config = getViewMixingConfig(view);
-        if (audio_mixer && video_mixer && view_config && view_config.audio && view_config.audio.vad) {
+        if (mix_view.audio.mixer && mix_view.video.mixer && view_config && view_config.audio && view_config.audio.vad) {
             makeRPC(
                 rpcClient,
-                terminals[audio_mixer].locality.node,
+                terminals[mix_view.audio.mixer].locality.node,
                 'resetVAD',
                 []);
         }
@@ -329,17 +327,18 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         log.debug('deinitialize');
 
         for (var terminal_id in terminals) {
+            var terminal = terminals[terminal_id];
             if (isParticipantTerminal(terminal_id)) {
-                terminals[terminal_id].published.map(function (stream_id) {
+                terminal.published.map(function (stream_id) {
                     unpublishStream(stream_id);
                 });
-            } else if (terminals[terminal_id].type === 'amixer' ||
-                       terminals[terminal_id].type === 'vmixer' ||
-                       terminals[terminal_id].type === 'axcoder' ||
-                       terminals[terminal_id].type === 'vxcoder') {
+            } else if (terminal.type === 'amixer' ||
+                       terminal.type === 'vmixer' ||
+                       terminal.type === 'axcoder' ||
+                       terminal.type === 'vxcoder') {
                 makeRPC(
                     rpcClient,
-                    terminals[terminal_id].locality.node,
+                    terminal.locality.node,
                     'deinit',
                     [terminal_id]);
             }
@@ -380,12 +379,13 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var deleteTerminal = function (terminal_id) {
         log.debug('deleteTerminal:', terminal_id);
-        if (terminals[terminal_id]) {
-            if (terminals[terminal_id].type === 'amixer'
-                || terminals[terminal_id].type === 'axcoder'
-                || terminals[terminal_id].type === 'vmixer'
-                || terminals[terminal_id].type === 'vxcoder') {
-                rpcReq.recycleWorkerNode(terminals[terminal_id].locality.agent, terminals[terminal_id].locality.node, {room: room_id, task: terminal_id})
+        var terminal = terminals[terminal_id];
+        if (terminal) {
+            if (terminal.type === 'amixer'
+                || terminal.type === 'axcoder'
+                || terminal.type === 'vmixer'
+                || terminal.type === 'vxcoder') {
+                rpcReq.recycleWorkerNode(terminal.locality.agent, terminal.locality.node, {room: room_id, task: terminal_id})
                 .catch(function(reason) {
                     // Catch the error to avoid the UnhandledPromiseRejectionWarning in node v6,
                     // The current code can reach here due to recycle an already recycled node.
@@ -398,11 +398,13 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     };
 
     var isTerminalFree = function (terminal_id) {
-        return terminals[terminal_id] && terminals[terminal_id].published.length === 0 && (Object.keys(terminals[terminal_id].subscribed).length === 0) ? true : false;
+        var terminal = terminals[terminal_id];
+        return terminal && terminal.published.length === 0 && (Object.keys(terminal.subscribed).length === 0) ? true : false;
     };
 
     var isParticipantTerminal = function (terminal_id) {
-        return terminals[terminal_id] && (terminals[terminal_id].type === 'webrtc' || terminals[terminal_id].type === 'streaming' || terminals[terminal_id].type === 'recording' || terminals[terminal_id].type === 'sip');
+        var terminal = terminals[terminal_id];
+        return terminal && (terminal.type === 'webrtc' || terminal.type === 'streaming' || terminal.type === 'recording' || terminal.type === 'sip');
     };
 
     var spreadStream = function (stream_id, target_node, target_node_type, on_ok, on_error) {
@@ -614,23 +616,28 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     };
 
     var getSubMediaMixer = function (view, subMedia) {
-        if (mix_views[view] && mix_views[view][subMedia])
-            return mix_views[view][subMedia].mixer;
+        var mix_view = mix_views[view];
+        if (mix_view && mix_view[subMedia])
+            return mix_view[subMedia].mixer;
         return null;
     };
 
     var mixAudio = function (stream_id, view, on_ok, on_error) {
         log.debug('to mix audio of stream:', stream_id, 'mixed view:', view);
         var audio_mixer = getSubMediaMixer(view, 'audio');
-        if (streams[stream_id] && audio_mixer && terminals[audio_mixer]) {
-            var target_node = terminals[audio_mixer].locality.node,
+        var stream = streams[stream_id];
+        var terminal = terminals[audio_mixer];
+        if (stream && audio_mixer && terminal) {
+            var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node;
             spreadStream(stream_id, target_node, 'amixer', function() {
-                if (terminals[audio_mixer] && streams[stream_id]) {
-                    terminals[audio_mixer].subscribed[spread_id] = {audio: stream_id};
-                    (streams[stream_id].audio.subscribers.indexOf(audio_mixer) < 0) && streams[stream_id].audio.subscribers.push(audio_mixer);
+                var stream = streams[stream_id];
+                var terminal = terminals[audio_mixer];
+                if (terminal && stream) {
+                    terminal.subscribed[spread_id] = {audio: stream_id};
+                    (stream.audio.subscribers.indexOf(audio_mixer) < 0) && stream.audio.subscribers.push(audio_mixer);
                     on_ok();
-                    if (streams[stream_id].audio.status === 'inactive') {
+                    if (stream.audio.status === 'inactive') {
                         makeRPC(
                             rpcClient,
                             target_node,
@@ -651,13 +658,15 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var unmixAudio = function (stream_id, view) {
         log.debug('to unmix audio of view:', view);
         var audio_mixer = getSubMediaMixer(view, 'audio');
-        if (streams[stream_id] && streams[stream_id].audio && audio_mixer && terminals[audio_mixer]) {
-            var target_node = terminals[audio_mixer].locality.node,
+        var stream = streams[stream_id];
+        var terminal = terminals[audio_mixer];
+        if (stream && stream.audio && audio_mixer && terminal) {
+            var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node,
-                i = streams[stream_id].audio.subscribers.indexOf(audio_mixer);
-            delete terminals[audio_mixer].subscribed[spread_id];
+                i = stream.audio.subscribers.indexOf(audio_mixer);
+            delete terminal.subscribed[spread_id];
             if (i > -1) {
-                streams[stream_id].audio.subscribers.splice(i, 1);
+                stream.audio.subscribers.splice(i, 1);
                 shrinkStream(stream_id, target_node);
             }
         }
@@ -666,15 +675,19 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var mixVideo = function (stream_id, view, on_ok, on_error) {
         log.debug('to mix video of stream:', stream_id);
         var video_mixer = getSubMediaMixer(view, 'video');
-        if (streams[stream_id] && video_mixer && terminals[video_mixer]) {
-            var target_node = terminals[video_mixer].locality.node,
+        var stream = streams[stream_id];
+        var terminal = terminals[video_mixer];
+        if (stream && video_mixer && terminal) {
+            var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node;
             spreadStream(stream_id, target_node, 'vmixer', function() {
-                if (terminals[video_mixer] && streams[stream_id]) {
-                    terminals[video_mixer].subscribed[spread_id] = {video: stream_id};
-                    (streams[stream_id].video.subscribers.indexOf(video_mixer) < 0) && streams[stream_id].video.subscribers.push(video_mixer);
+                var stream = streams[stream_id];
+                var terminal = terminals[video_mixer];
+                if (terminal && stream) {
+                    terminal.subscribed[spread_id] = {video: stream_id};
+                    (stream.video.subscribers.indexOf(video_mixer) < 0) && stream.video.subscribers.push(video_mixer);
                     on_ok();
-                    if (streams[stream_id].video.status === 'inactive') {
+                    if (stream.video.status === 'inactive') {
                         makeRPC(
                             rpcClient,
                             target_node,
@@ -695,13 +708,15 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var unmixVideo = function (stream_id, view) {
         log.debug('to unmix video of stream:', stream_id);
         var video_mixer = getSubMediaMixer(view, 'video');
-        if (streams[stream_id] && streams[stream_id].video && video_mixer && terminals[video_mixer]) {
-            var target_node = terminals[video_mixer].locality.node,
+        var stream = streams[stream_id];
+        var terminal = terminals[video_mixer];
+        if (stream && stream.video && video_mixer && terminal) {
+            var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node,
-                i = streams[stream_id].video.subscribers.indexOf(video_mixer);
-            delete terminals[video_mixer].subscribed[spread_id];
+                i = stream.video.subscribers.indexOf(video_mixer);
+            delete terminal.subscribed[spread_id];
             if (i > -1) {
-                streams[stream_id].video.subscribers.splice(i, 1);
+                stream.video.subscribers.splice(i, 1);
                 shrinkStream(stream_id, target_node);
             }
         }
@@ -729,11 +744,12 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var unmixStream = function (stream_id, view) {
         log.debug('to unmix stream:', stream_id);
-        if (streams[stream_id] && streams[stream_id].audio) {
+        var stream = streams[stream_id];
+        if (stream && stream.audio) {
             unmixAudio(stream_id, view);
         }
 
-        if (streams[stream_id] && streams[stream_id].video) {
+        if (stream && stream.video) {
             unmixVideo(stream_id, view);
         }
     };
@@ -743,7 +759,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         if (audio_mixer && terminals[audio_mixer]) {
             var amixer_node = terminals[audio_mixer].locality.node;
             var for_whom = (terminals[subscriber] ? terminals[subscriber].owner : 'common');
-            log.debug('spawnMixedAudio, for subscriber:', subscriber, 'audio_format:', audio_format);
+            log.debug('spawnMixedAudio, for subscriber:', subscriber, 'for:' , for_whom, 'audio_format:', audio_format);
             makeRPC(
                 rpcClient,
                 amixer_node,
@@ -1260,13 +1276,13 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     };
 
     var unpublishStream = function (stream_id) {
-        if (streams[stream_id]) {
-            log.debug('unpublishStream:', stream_id, 'stream.owner:', streams[stream_id].owner);
-            var stream = streams[stream_id],
-                terminal_id = stream.owner,
-                node = terminals[terminal_id].locality.node;
+        var stream = streams[stream_id];
+        if (stream) {
+            log.debug('unpublishStream:', stream_id, 'stream.owner:', stream.owner);
+            var terminal = terminals[stream.owner];
+                node = terminal.locality.node;
 
-            var i = terminals[terminal_id].published.indexOf(stream_id);
+            var i = terminal.published.indexOf(stream_id);
             if (i !== -1) {
                 if (config.views.length > 0) {
                     // Unmix on every mix engine
@@ -1275,7 +1291,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
                     }
                 }
                 removeSubscriptions(stream_id);
-                terminals[terminal_id] && terminals[terminal_id].published.splice(i, 1);
+                terminal && terminal.published.splice(i, 1);
             }
             stream.close && stream.close();
             delete streams[stream_id];
@@ -1285,12 +1301,14 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     };
 
     var unsubscribeStream = function (subscriber, subscription_id) {
-        if (terminals[subscriber]) {
+        var terminal = terminals[subscriber];
+        if (terminal) {
             log.debug('unsubscribeStream, subscriber:', subscriber, 'subscription_id:', subscription_id);
-            var node = terminals[subscriber].locality.node,
-                subscription = terminals[subscriber].subscribed[subscription_id],
+            var node = terminal.locality.node,
+                subscription = terminal.subscribed[subscription_id],
                 audio_stream = subscription && subscription.audio,
                 video_stream = subscription && subscription.video;
+            var astream, vstream;
 
             if (isParticipantTerminal(subscriber)) {
                 makeRPC(
@@ -1300,40 +1318,44 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
                     [subscription_id]);
             }
 
-            if (audio_stream && streams[audio_stream]) {
-                if (streams[audio_stream].audio) {
-                    var i = streams[audio_stream].audio.subscribers.indexOf(subscriber);
-                    i > -1 && streams[audio_stream].audio.subscribers.splice(i, 1);
+            if (audio_stream && (astream = streams[audio_stream])) {
+                if (astream.audio) {
+                    var i = astream.audio.subscribers.indexOf(subscriber);
+                    i > -1 && astream.audio.subscribers.splice(i, 1);
                 }
-                terminals[streams[audio_stream].owner] && terminals[streams[audio_stream].owner].locality.node !== node && shrinkStream(audio_stream, node);
-                terminals[streams[audio_stream].owner] && !isParticipantTerminal(streams[audio_stream].owner) && recycleTemporaryAudio(audio_stream);
+                var terminal = terminals[astream.owner];
+                terminal && terminal.locality.node !== node && shrinkStream(audio_stream, node);
+                terminal && !isParticipantTerminal(astream.owner) && recycleTemporaryAudio(audio_stream);
             }
 
-            if (video_stream && streams[video_stream]) {
-                if (streams[video_stream].video) {
-                    var i = streams[video_stream].video.subscribers.indexOf(subscriber);
-                    i > -1 && streams[video_stream].video.subscribers.splice(i, 1);
+            if (video_stream && (vstream = streams[video_stream])) {
+                if (vstream.video) {
+                    var i = vstream.video.subscribers.indexOf(subscriber);
+                    i > -1 && vstream.video.subscribers.splice(i, 1);
                 }
-                terminals[streams[video_stream].owner] && terminals[streams[video_stream].owner].locality.node !== node && shrinkStream(video_stream, node);
-                terminals[streams[video_stream].owner] && !isParticipantTerminal(streams[video_stream].owner) && recycleTemporaryVideo(video_stream);
+                var terminal = terminals[vstream.owner];
+                terminal && terminal.locality.node !== node && shrinkStream(video_stream, node);
+                terminal && !isParticipantTerminal(vstream.owner) && recycleTemporaryVideo(video_stream);
             }
 
-            delete terminals[subscriber].subscribed[subscription_id];
+            delete terminal.subscribed[subscription_id];
         } else {
             log.info('try to unsubscribe to an unexisting terminal:', subscriber);
         }
     };
 
     var removeSubscriptions = function (stream_id) {
-        if (streams[stream_id]) {
-            if (streams[stream_id].audio) {
-                streams[stream_id].audio.subscribers.forEach(function(terminal_id) {
-                    if (terminals[terminal_id]) {
-                        for (var subscription_id in terminals[terminal_id].subscribed) {
+        var stream = streams[stream_id];
+        if (stream) {
+            if (stream.audio) {
+                stream.audio.subscribers.forEach(function(terminal_id) {
+                    var terminal = terminals[terminal_id];
+                    if (terminal) {
+                        for (var subscription_id in terminal.subscribed) {
                             unsubscribeStream(terminal_id, subscription_id);
-                            if (terminals[terminal_id].type === 'axcoder') {
-                                for (var i in terminals[terminal_id].published) {
-                                    unpublishStream(terminals[terminal_id].published[i]);
+                            if (terminal.type === 'axcoder') {
+                                for (var i in terminal.published) {
+                                    unpublishStream(terminal.published[i]);
                                 }
                             }
                         }
@@ -1345,14 +1367,16 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
                 streams[stream_id] && (streams[stream_id].audio.subscribers = []);
             }
 
-            if (streams[stream_id] && streams[stream_id].video) {
-                streams[stream_id].video.subscribers.forEach(function(terminal_id) {
-                    if (terminals[terminal_id]) {
-                        for (var subscription_id in terminals[terminal_id].subscribed) {
+            stream = streams[stream_id];
+            if (stream && stream.video) {
+                stream.video.subscribers.forEach(function(terminal_id) {
+                    var terminal = terminals[terminal_id];
+                    if (terminal) {
+                        for (var subscription_id in terminal.subscribed) {
                             unsubscribeStream(terminal_id, subscription_id);
-                            if (terminals[terminal_id].type === 'vxcoder') {
-                                for (var i in terminals[terminal_id].published) {
-                                    unpublishStream(terminals[terminal_id].published[i]);
+                            if (terminal.type === 'vxcoder') {
+                                for (var i in terminal.published) {
+                                    unpublishStream(terminal.published[i]);
                                 }
                             }
                         }
@@ -1374,11 +1398,12 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     const rebuildStream = (streamId, accessNode, on_ok, on_error) => {
         log.debug('rebuildStream, streamId:', streamId, 'accessNode:', accessNode.node);
 
-        var old_st = JSON.parse(JSON.stringify(streams[streamId]));
+        var stream = streams[streamId];
+        var old_st = JSON.parse(JSON.stringify(stream));
         terminals[old_st.owner].locality = accessNode;
         terminals[old_st.owner].subscribers = {};
-        streams[streamId].spread = [];
-        streams[streamId].video.subscribers = [];
+        stream.spread = [];
+        stream.video.subscribers = [];
 
         return Promise.all(old_st.spread.map(function(target_node) {
             return new Promise(function (res, rej) {
@@ -1405,8 +1430,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
                                 [sub_id, undefined, streamId],
                                 function () {
                                     log.debug('resumed sub_id:', sub_id, 'for streamId:', streamId);
-                                    streams[streamId].video.subscribers = streams[streamId].video.subscribers || [];
-                                    streams[streamId].video.subscribers.push(t_id);
+                                    stream.video.subscribers = stream.video.subscribers || [];
+                                    stream.video.subscribers.push(t_id);
                                     terminals[t_id].subscribed[sub_id].video = streamId;
                                 }, function (reason) {
                                     log.warn('Failed in resuming video subscription:', sub_id, 'reason:', reason);
@@ -1458,17 +1483,16 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     that.unpublish = function (participantId, streamId) {
         log.debug('unpublish, stream_id:', streamId);
         var terminal_id = pubTermId(participantId, streamId);
+        var stream = streams[streamId];
 
-        if (streams[streamId] === undefined
-            || streams[streamId].owner !== terminal_id
+        if (stream === undefined
+            || stream.owner !== terminal_id
             || terminals[terminal_id] === undefined
             || terminals[terminal_id].published.indexOf(streamId) === -1) {
             log.info('unpublish a rogue stream:', streamId);
         }
 
-        if (streams[streamId]) {
-            unpublishStream(streamId);
-        }
+        unpublishStream(streamId);
 
         deleteTerminal(terminal_id);
     };
@@ -1816,8 +1840,9 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     that.setPrimary = function (inputStreamId, view) {
         log.debug('setPrimary:', inputStreamId, view);
         var video_mixer = getSubMediaMixer(view, 'video');
+        var stream = streams[inputStreamId];
 
-        if (streams[inputStreamId] && streams[inputStreamId].video && (streams[inputStreamId].video.subscribers.indexOf(video_mixer) !== -1)) {
+        if (stream && stream.video && (stream.video.subscribers.indexOf(video_mixer) !== -1)) {
             makeRPC(
                 rpcClient,
                 terminals[video_mixer].locality.node,
@@ -2321,11 +2346,12 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var onVideoFault = function (type, id) {
         for (var terminal_id in terminals) {
-            if (isImpacted(terminals[terminal_id].locality, type, id)) {
-                log.debug('Impacted terminal:', terminal_id, 'and its locality:', terminals[terminal_id].locality);
-                if (terminals[terminal_id].type === 'vmixer') {
+            var terminal = terminals[terminal_id];
+            if (isImpacted(terminal.locality, type, id)) {
+                log.debug('Impacted terminal:', terminal_id, 'and its locality:', terminal.locality);
+                if (terminal.type === 'vmixer') {
                     rebuildVideoMixer(terminal_id);
-                } else if (terminals[terminal_id].type === 'vxcoder') {
+                } else if (terminal.type === 'vxcoder') {
                     rebuildVideoTranscoder(terminal_id);
                 }
             }
@@ -2334,11 +2360,12 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var onAudioFault = function (type, id) {
         for (var terminal_id in terminals) {
-            if (isImpacted(terminals[terminal_id].locality, type, id)) {
-                log.debug('Impacted terminal:', terminal_id, 'and its locality:', terminals[terminal_id].locality);
-                if (terminals[terminal_id].type === 'amixer') {
+            var terminal = terminals[terminal_id];
+            if (isImpacted(terminal.locality, type, id)) {
+                log.debug('Impacted terminal:', terminal_id, 'and its locality:', terminal.locality);
+                if (terminal.type === 'amixer') {
                     rebuildAudioMixer(terminal_id);
-                } else if (terminals[terminal_id].type === 'axcoder') {
+                } else if (terminal.type === 'axcoder') {
                     rebuildAudioTranscoder(terminal_id);
                 }
             }
@@ -2355,12 +2382,13 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     };
 
     that.getViewCapability = function (view) {
-        if (mix_views[view]) {
+        var mix_view = mix_views[view];
+        if (mix_view) {
             return {
-                audio: mix_views[view].audio.supported_formats.map(audio_format_obj),
+                audio: mix_view.audio.supported_formats.map(audio_format_obj),
                 video: {
-                    encode: mix_views[view].video.supported_formats.encode.map(video_format_obj),
-                    decode: mix_views[view].video.supported_formats.decode.map(video_format_obj)
+                    encode: mix_view.video.supported_formats.encode.map(video_format_obj),
+                    decode: mix_view.video.supported_formats.decode.map(video_format_obj)
                 }
             };
         } else {

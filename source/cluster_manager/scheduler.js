@@ -43,8 +43,9 @@ exports.Scheduler = function(spec) {
     };
 
     var repealTask = function (task) {
-        if (tasks[task]) {
-            tasks[task].reserve_timer && clearTimeout(tasks[task].reserve_timer);
+        var task_info = tasks[task];
+        if (task_info) {
+            task_info.reserve_timer && clearTimeout(task_info.reserve_timer);
             delete tasks[task];
         }
     };
@@ -55,12 +56,13 @@ exports.Scheduler = function(spec) {
                 workers[worker].tasks.push(task);
             }
 
-            if (tasks[task]) {
-                tasks[task].reserve_timer && clearTimeout(tasks[task].reserve_timer);
+            var task_info = tasks[task];
+            if (task_info) {
+                task_info.reserve_timer && clearTimeout(task_info.reserve_timer);
 
-                if (tasks[task].worker !== worker) {
+                if (task_info.worker !== worker) {
                     log.warn('Worker conflicts for task:', task, 'and update to worker:', worker);
-                    tasks[task].worker = worker;
+                    task_info.worker = worker;
                 }
             } else {
                tasks[task] = {reserve_time: schedule_reserve_time,

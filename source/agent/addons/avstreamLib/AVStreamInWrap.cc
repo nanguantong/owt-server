@@ -78,7 +78,11 @@ void AVStreamInWrap::New(const FunctionCallbackInfo<Value>& args)
         param.enableVideo = std::string(*String::Utf8Value(options->Get(keyVideo)->ToString()));
 
     AVStreamInWrap* obj = new AVStreamInWrap();
-    std::string type = std::string(*String::Utf8Value(options->Get(String::NewFromUtf8(isolate, "type"))->ToString()));
+    Local<String> keyType = String::NewFromUtf8(isolate, "type");
+    std::string type = "";
+    if (options->Has(keyType)) {
+        type = std::string(*String::Utf8Value(options->Get(keyType)->ToString()));
+    }
     if (type.compare("streaming") == 0)
         obj->me = new owt_base::LiveStreamIn(param, obj);
     else if (type.compare("file") == 0)

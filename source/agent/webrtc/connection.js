@@ -106,8 +106,6 @@ class Connection extends EventEmitter {
               `mediaStreamId: ${id}, isPublisher: ${isPublisher}`);
     const mediaStream = new addon.MediaStream(this.threadPool, this.wrtc, id,
       options.label, this._getMediaConfiguration(this.mediaConfiguration), isPublisher);
-    mediaStream.id = id;
-    mediaStream.label = options.label;
     if (options.metadata) {
       // mediaStream.metadata = options.metadata;
       // mediaStream.setMetadata(JSON.stringify(options.metadata));
@@ -246,9 +244,10 @@ class Connection extends EventEmitter {
   }
 
   removeMediaStream(id) {
-    if (this.mediaStreams.get(id) !== undefined) {
+    const mediaStream = this.mediaStreams.get(id);
+    if (mediaStream !== undefined) {
       this.wrtc.removeMediaStream(id);
-      this.mediaStreams.get(id).close();
+      mediaStream.close();
       this.mediaStreams.delete(id);
       log.debug(`removed mediaStreamId ${id}, remaining size ${this.getNumMediaStreams()}`);
       this._maybeSendAnswer(CONN_SDP, id, true);

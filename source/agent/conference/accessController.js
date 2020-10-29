@@ -108,13 +108,9 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
 
       if (session.options.type === 'recording') {
         info.location = status.info;
-      }
-
-      if (session.options.type === 'streaming') {
+      } else if (session.options.type === 'streaming') {
         info.url = status.info
-      }
-
-      if (session.options.type === 'analytics') {
+      } else if (session.options.type === 'analytics') {
         info.analytics = status.info;
       }
     }
@@ -130,24 +126,27 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
 
   const onFailed = (sessionId, reason) => {
     log.info('onFailed, sessionId:', sessionId, 'reason:', reason);
-    var owner = sessions[sessionId].owner,
-        direction = sessions[sessionId].direction;
-    terminateSession(sessionId).catch((whatever) => {});
-    on_session_aborted(owner, sessionId, direction, reason);
+    var session = sessions[sessionId];
+    if (session) {
+      terminateSession(sessionId).catch((whatever) => {});
+      on_session_aborted(session.owner, sessionId, session.direction, reason);
+    }
   };
 
   const onSignaling = (sessionId, signaling) => {
-    on_session_signaling(sessions[sessionId].owner, sessionId, signaling);
+    var session = sessions[sessionId];
+    session && on_session_signaling(session.owner, sessionId, signaling);
   };
 
   that.getSessionState = (sessionId) => {
-    return sessions[sessionId] && sessions[sessionId].state;
+    var session = sessions[sessionId];
+    return session && session.state;
   };
 
   that.onSessionStatus = (sessionId, status) => {
-    if (!sessions[sessionId]) {
-      log.error('Session does NOT exist');
-      return Promise.reject('Session does NOT exist');
+    var session = sessions[sessionId];
+    if (!session) {
+      return Promise.reject('Session ' + sessionId + ' does NOT exist');
     }
 
     if (status.type === 'ready') {
@@ -165,11 +164,12 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
   };
 
   that.onSessionSignaling = (sessionId, signaling) => {
-    if (!sessions[sessionId]) {
+    var session = sessions[sessionId];
+    if (!session) {
       return Promise.reject('Session ' + sessionId + ' does NOT exist');
     }
 
-    return rpcReq.onSessionSignaling(sessions[sessionId].locality.node, sessionId, signaling)
+    return rpcReq.onSessionSignaling(session.locality.node, sessionId, signaling)
       .catch((e) => {
         terminateSession(sessionId).catch((whatever) => {});
         return Promise.reject(e.message ? e.message : e);
@@ -180,10 +180,10 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
     log.debug('participantLeave, participantId:', participantId);
     var pl = [];
     for (var session_id in sessions) {
-      if (sessions[session_id].owner === participantId) {
-        var direction = sessions[session_id].direction;
+      var session = sessions[sessionId];
+      if (session.owner === participantId) {
         pl.push(terminateSession(session_id));
-        on_session_aborted(participantId, session_id, direction, 'Participant leave');
+        on_session_aborted(session.owner, session_id, session.direction, 'Participant leave');
       }
     }
     return Promise.all(pl);
@@ -314,7 +314,8 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
       })
       .then(function() {
         log.debug('Initiate ok, participantId:', session.owner, 'sessionId:', sessionId);
-        if (sessions[sessionId] === undefined) {
+        var session = sessions[sessionId];
+        if (session === undefined) {
           log.debug('Session has been aborted, sessionId:', sessionId);
           rpcReq.terminate(locality.node, sessionId, session.direction)
             .catch(function(reason) {
@@ -326,7 +327,7 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
             });
           return Promise.reject('Session has been aborted');
         }
-        sessions[sessionId].state = 'connecting';
+        session.state = 'connecting';
         return 'ok';
       }, (e) => {
         delete sessions[sessionId];
@@ -336,15 +337,12 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
 
   that.onFaultDetected = function (faultType, faultId) {
     for (var session_id in sessions) {
-      var locality = sessions[session_id].locality;
-      if (locality && isImpacted(locality, faultType, faultId)) {
-        var owner = sessions[session_id].owner,
-            direction = sessions[session_id].direction;
+      var session = sessions[session_id];
+      if (session.locality && isImpacted(session.locality, faultType, faultId)) {
+        log.info('Fault detected on node:', session.locality);
+        on_session_aborted(session.owner, session_id, session.direction, 'Access node exited unexpectedly');
 
-        log.info('Fault detected on node:', locality);
-        on_session_aborted(owner, session_id, direction, 'Access node exited unexpectedly');
-
-        if (sessions[session_id].options.type === 'analytics') {
+        if (session.options.type === 'analytics') {
           rebuildAnalyticsSubscriber(session_id);
         } else {
           terminateSession(session_id).catch((whatever) => {});
@@ -356,10 +354,9 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
 
   that.destroy = () => {
     for (var session_id in sessions) {
-      var owner = sessions[session_id].owner;
-      var direction = sessions[session_id].direction;
+      var session = sessions[session_id];
       terminateSession(session_id).catch((whatever) => {});
-      on_session_aborted(owner, session_id, direction, 'Room destruction');
+      on_session_aborted(session.owner, session_id, session.direction, 'Room destruction');
     }
   };
 

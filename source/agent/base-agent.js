@@ -154,7 +154,7 @@ class BaseAgent {
       return connections.removeConnection(connId)
         .then(function(ok) {
           if (conn && conn.type === 'internal') {
-            this.internalConnFactory.destroy(connId, direction);
+            this.internalConnFactory.destroy(connId, conn.direction);
           } else if (conn) {
             conn.connection.close();
           }

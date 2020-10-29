@@ -30,8 +30,9 @@ var cpuCollector = function (period, onLoad) {
             }
         }
         olds = cpus;
-        onLoad(1 - idle/total);
-        log.debug('cpu usage:', 1 - idle/total);
+        var usage = 1 - idle/total;
+        onLoad(usage);
+        log.debug('cpu usage:', usage);
     }, period);
 
     this.stop = function () {
@@ -48,7 +49,7 @@ var memCollector = function (period, onLoad) {
     }, period);
 
     this.stop = function () {
-        log.debug("To mem cpu load collector.");
+        log.debug("To stop mem cpu load collector.");
         clearInterval(interval);
     };
 };

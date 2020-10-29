@@ -49,6 +49,11 @@ using json = nlohmann::json;
 
 DEFINE_LOGGER(MediaStream, "MediaStreamWrapper");
 
+std::string getString(v8::Local<v8::Value> value) {
+  v8::String::Utf8Value value_str(Nan::To<v8::String>(value).ToLocalChecked()); \
+  return std::string(*value_str);
+}
+
 StatCallWorker::StatCallWorker(Nan::Callback *callback, std::weak_ptr<erizo::MediaStream> weak_stream)
     : Nan::AsyncWorker{callback}, weak_stream_{weak_stream}, stat_{""} {
 }
@@ -169,11 +174,8 @@ NAN_METHOD(MediaStream::New) {
 
     std::shared_ptr<erizo::WebRtcConnection> wrtc = connection->me;
 
-    v8::String::Utf8Value paramId(Nan::To<v8::String>(info[2]).ToLocalChecked());
-    std::string wrtc_id = std::string(*paramId);
-
-    v8::String::Utf8Value paramLabel(Nan::To<v8::String>(info[3]).ToLocalChecked());
-    std::string stream_label = std::string(*paramLabel);
+    std::string wrtc_id = getString(info[2]);
+    std::string stream_label = getString(info[3]);
 
     bool is_publisher = info[5]->BooleanValue();
 
@@ -265,8 +267,7 @@ NAN_METHOD(MediaStream::setMetadata) {
     return;
   }
 
-  v8::String::Utf8Value json_param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string metadata_string = std::string(*json_param);
+  std::string metadata_string = getString(info[0]);
   json metadata_json = json::parse(metadata_string);
   std::map<std::string, std::string> metadata;
   for (json::iterator item = metadata_json.begin(); item != metadata_json.end(); ++item) {
@@ -345,11 +346,8 @@ NAN_METHOD(MediaStream::enableHandler) {
     return;
   }
 
-  v8::String::Utf8Value param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string name = std::string(*param);
-
+  std::string name = getString(info[0]);
   me->enableHandler(name);
-  return;
 }
 
 NAN_METHOD(MediaStream::disableHandler) {
@@ -359,9 +357,7 @@ NAN_METHOD(MediaStream::disableHandler) {
     return;
   }
 
-  v8::String::Utf8Value param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string name = std::string(*param);
-
+  std::string name = getString(info[0]);
   me->disableHandler(name);
 }
 

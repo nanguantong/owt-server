@@ -74,8 +74,7 @@ class WrtcStream {
     var dest;
     if (track === 'audio') {
       dest = this.audioFramePacketizer;
-    }
-    if (track === 'video') {
+    } else if (track === 'video') {
       dest = this.videoFramePacketizer;
     }
     if (!dest) {

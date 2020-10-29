@@ -277,7 +277,11 @@ function createForwardStream(id, media, info, roomConfig) {
           result.video.optional.parameters = (result.video.optional.parameters || {});
 
           if (result.video.parameters && result.video.parameters.resolution) {
-            result.video.optional.parameters.resolution = roomConfig.mediaOut.video.parameters.resolution.map((x) => {return calcResolution(x, result.video.parameters.resolution)}).filter((reso, pos, self) => {return ((reso.width < result.video.parameters.resolution.width) && (reso.height < result.video.parameters.resolution.height)) && (self.findIndex((r) => {return r.width === reso.width && r.height === reso.height;}) === pos);});
+            result.video.optional.parameters.resolution = roomConfig.mediaOut.video.parameters.resolution.map((x) => 
+              {return calcResolution(x, result.video.parameters.resolution)}).filter((reso, pos, self) => 
+                {return ((reso.width < result.video.parameters.resolution.width) && 
+                         (reso.height < result.video.parameters.resolution.height)) && 
+                        (self.findIndex((r) => {return r.width === reso.width && r.height === reso.height;}) === pos);});
           } else {
             result.video.optional.parameters.resolution = roomConfig.mediaOut.video.parameters.resolution
               .filter((x) => {return (x !== 'x3/4') && (x !== 'x2/3') && (x !== 'x1/2') && (x !== 'x1/3') && (x !== 'x1/4');})//FIXME: is auto-scaling possible?

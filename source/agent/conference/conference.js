@@ -386,16 +386,14 @@ var Conference = function (rpcClient, selfRpcId) {
                   is_initializing = false;
 
                   room_config.views.forEach((viewSettings) => {
-                    var mixed_stream_id = room_id + '-' + viewSettings.label;
                     var av_capability = roomController.getViewCapability(viewSettings.label);
-
                     if (!av_capability) {
                       log.error('No audio/video capability for view: ' + viewSettings.label);
                       return;
                     }
 
                     var mixed_stream_info = Stream.createMixStream(room_id, viewSettings, room_config.mediaOut, av_capability);
-
+                    var mixed_stream_id = room_id + '-' + viewSettings.label;
                     streams[mixed_stream_id] = mixed_stream_info;
                     streams[mixed_stream_id].info.origin = origin;
                     log.debug('Mixed stream info:', mixed_stream_info);
@@ -600,7 +598,10 @@ var Conference = function (rpcClient, selfRpcId) {
     }
 
     var isReadded = !!(streams[id] && !streams[id].isInConnecting);
-    var origin = streams[id].info.origin;
+    var origin = { isp:'isp', region:'region'};
+    if (streams[id] != null && streams[id].info != null) {
+      origin = streams[id].info.origin;
+    }
     info.origin = origin;
     return new Promise((resolve, reject) => {
       roomController && roomController.publish(info.owner, id, locality, media, info.type, origin, function() {
@@ -856,6 +857,9 @@ var Conference = function (rpcClient, selfRpcId) {
   that.join = function(roomId, participantInfo, callback) {
     log.debug('participant:', participantInfo, 'join room:', roomId);
     var permission;
+    if (!participantInfo.origin) {
+      participantInfo.origin = { isp:'isp', region:'region'};
+    }
     return initRoom(roomId, participantInfo.origin)
       .then(function() {
         log.debug('room_config.participantLimit:', room_config.participantLimit, 'current participants count:', Object.keys(participants).length);
@@ -981,7 +985,7 @@ var Conference = function (rpcClient, selfRpcId) {
     }
 
     if (pubInfo.type === 'sip') {
-      return addStream(streamId, pubInfo.locality, pubInfo.media, {owner: participantId, type: 'sip'})
+      return addStream(streamId, pubInfo.locality, pubInfo.media, {owner: participantId, type: pubInfo.type})
       .then((result) => {
         callback('callback', result);
       })
@@ -989,9 +993,8 @@ var Conference = function (rpcClient, selfRpcId) {
         callback('callback', 'error', e.message ? e.message : e);
       });
     } else if (pubInfo.type === 'analytics') {
-      return addStream(streamId, pubInfo.locality,
-        pubInfo.media,
-        {owner: 'admin', type: 'analytics', analytics: pubInfo.analyticsId})
+      return addStream(streamId, pubInfo.locality, pubInfo.media,
+        {owner: 'admin', type: pubInfo.type, analytics: pubInfo.analyticsId})
       .then((result) => {
         callback('callback', result);
       })
@@ -1343,18 +1346,19 @@ var Conference = function (rpcClient, selfRpcId) {
   };
 
   const mix = function(streamId, toView) {
-    if (streams[streamId].isInConnecting) {
+    var stream = streams[streamId];
+    if (stream.isInConnecting) {
       return Promise.reject('Stream is NOT ready');
     }
 
-    if (streams[streamId].info.inViews.indexOf(toView) !== -1) {
+    if (stream.info.inViews.indexOf(toView) !== -1) {
       return Promise.resolve('ok');
     }
 
     return new Promise((resolve, reject) => {
       roomController.mix(streamId, toView, function() {
-        if (streams[streamId].info.inViews.indexOf(toView) === -1) {
-          streams[streamId].info.inViews.push(toView);
+        if (stream.info.inViews.indexOf(toView) === -1) {
+          stream.info.inViews.push(toView);
         }
         resolve('ok');
       }, function(reason) {
@@ -1365,13 +1369,14 @@ var Conference = function (rpcClient, selfRpcId) {
   };
 
   const unmix = function(streamId, fromView) {
-    if (streams[streamId].isInConnecting) {
+    var stream = streams[streamId];
+    if (stream.isInConnecting) {
       return Promise.reject('Stream is NOT ready');
     }
 
     return new Promise((resolve, reject) => {
       roomController.unmix(streamId, fromView, function() {
-        streams[streamId].info.inViews.splice(streams[streamId].info.inViews.indexOf(fromView), 1);
+        stream.info.inViews.splice(stream.info.inViews.indexOf(fromView), 1);
         resolve('ok');
       }, function(reason) {
         log.info('roomController.unmix failed, reason:', reason);
@@ -1381,7 +1386,8 @@ var Conference = function (rpcClient, selfRpcId) {
   };
 
   const setStreamMute = function(streamId, track, muted) {
-    if (streams[streamId].type === 'mixed') {
+    var stream = streams[streamId];
+    if (stream.type === 'mixed') {
       return Promise.reject('Stream is Mixed');
     }
 
@@ -1389,18 +1395,18 @@ var Conference = function (rpcClient, selfRpcId) {
         video = (track === 'video' || track === 'av') ? true : false,
         status = (muted ? 'inactive' : 'active');
 
-    if (audio && !streams[streamId].media.audio) {
+    if (audio && !stream.media.audio) {
       return Promise.reject('Stream does NOT contain audio track');
     }
 
-    if (video && !streams[streamId].media.video) {
+    if (video && !stream.media.video) {
       return Promise.reject('Stream does NOT contain video track');
     }
 
     return accessController.setMute(streamId, track, muted)
       .then(() => {
-        audio && (streams[streamId].media.audio.status = status);
-        video && (streams[streamId].media.video.status = status);
+        audio && (stream.media.audio.status = status);
+        video && (stream.media.video.status = status);
         roomController.updateStream(streamId, track, status);
         var updateFields = (track === 'av') ? ['audio.status', 'video.status'] : [track + '.status'];
         room_config.notifying.streamChange && updateFields.forEach((fieldData) => {
@@ -1583,22 +1589,23 @@ var Conference = function (rpcClient, selfRpcId) {
   };
 
   const setSubscriptionMute = (subscriptionId, track, muted) => {
+    var subscription = subscriptions[subscriptionId];
     var audio = (track === 'audio' || track === 'av') ? true : false,
         video = (track === 'video' || track === 'av') ? true : false,
         status = (muted ? 'active' : 'inactive');
 
-    if (audio && !subscriptions[subscriptionId].media.audio) {
+    if (audio && !subscription.media.audio) {
       return Promise.reject('Subscription does NOT contain audio track');
     }
 
-    if (video && !subscriptions[subscriptionId].media.video) {
+    if (video && !subscription.media.video) {
       return Promise.reject('Subscription does NOT contain video track');
     }
 
     return accessController.setMute(subscriptionId, track, muted)
       .then(() => {
-        audio && (subscriptions[subscriptionId].media.audio.status = status);
-        video && (subscriptions[subscriptionId].media.video.status = status);
+        audio && (subscription.media.audio.status = status);
+        video && (subscription.media.video.status = status);
         return 'ok';
       });
   };
@@ -2011,8 +2018,9 @@ var Conference = function (rpcClient, selfRpcId) {
             } else if ((cmd.path.startsWith('/info/layout/') && streams[cmd.value] && (streams[cmd.value].type !== 'mixed'))) {
               var path = cmd.path.split('/');
               var layout = streams[streamId].info.layout;
-              if (layout && layout[Number(path[3])]) {
-                exe = setRegion(cmd.value, layout[Number(path[3])].region.id, streams[streamId].info.label);
+              var layout_n;
+              if (layout && (layout_n = layout[Number(path[3])])) {
+                exe = setRegion(cmd.value, layout_n.region.id, streams[streamId].info.label);
               } else {
                 exe = Promise.reject('Not mixed stream or invalid region');
               }
@@ -2056,13 +2064,14 @@ var Conference = function (rpcClient, selfRpcId) {
   };
 
   const subscriptionAbstract = (subId) => {
-    var result = {id: subId, media: subscriptions[subId].media};
-    if (subscriptions[subId].info.type === 'streaming') {
-      result.url = subscriptions[subId].info.url;
-    } else if (subscriptions[subId].info.type === 'recording') {
-      result.storage = subscriptions[subId].info.location;
-    } else if (subscriptions[subId].info.type === 'analytics') {
-      result.analytics = subscriptions[subId].info.analytics;
+    var subscription = subscriptions[subId];
+    var result = {id: subId, media: subscription.media};
+    if (subscription.info.type === 'streaming') {
+      result.url = subscription.info.url;
+    } else if (subscription.info.type === 'recording') {
+      result.storage = subscription.info.location;
+    } else if (subscription.info.type === 'analytics') {
+      result.analytics = subscription.info.analytics;
     }
     return result;
   };
@@ -2380,7 +2389,7 @@ var Conference = function (rpcClient, selfRpcId) {
 
   that.getSipCalls = function(callback) {
     var result = [];
-    log.debug('getSipCalls: ' , participants );
+    log.debug('getSipCalls: ' , participants);
     for (var pid in participants) {
       if (participants[pid].getInfo().role === 'sip') {
         result.push(getSipCallInfo(pid));
@@ -2464,8 +2473,9 @@ var Conference = function (rpcClient, selfRpcId) {
 
   that.endSipCall = function(sipCallId, callback) {
     log.debug('endSipCall, sipCallId:', sipCallId);
-    if (participants[sipCallId] && participants[sipCallId].getInfo().role === 'sip') {
-      rpcReq.endSipCall(participants[sipCallId].getPortal(), sipCallId);
+    var participant = participants[sipCallId];
+    if (participant && participant.getInfo().role === 'sip') {
+      rpcReq.endSipCall(participant.getPortal(), sipCallId);
       removeParticipant(sipCallId);
       callback('callback', 'ok');
     } else {

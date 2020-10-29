@@ -102,17 +102,15 @@ NAN_METHOD(WebRtcConnection::New) {
     // Invoked as a constructor with 'new WebRTC()'
     ThreadPool* thread_pool = Nan::ObjectWrap::Unwrap<ThreadPool>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
     IOThreadPool* io_thread_pool = Nan::ObjectWrap::Unwrap<IOThreadPool>(Nan::To<v8::Object>(info[1]).ToLocalChecked());
-    v8::String::Utf8Value paramId(Nan::To<v8::String>(info[2]).ToLocalChecked());
-    std::string wrtcId = std::string(*paramId);
-    v8::String::Utf8Value param(Nan::To<v8::String>(info[3]).ToLocalChecked());
-    std::string stunServer = std::string(*param);
+    std::string wrtcId = getString(info[2]);
+    std::string stunServer = getString(info[3]);
+    
     int stunPort = info[4]->IntegerValue();
     int minPort = info[5]->IntegerValue();
     int maxPort = info[6]->IntegerValue();
     bool trickle = (info[7]->ToBoolean())->BooleanValue();
-    v8::String::Utf8Value json_param(Nan::To<v8::String>(info[8]).ToLocalChecked());
+    std::string media_config_string = getString(info[8]);
     bool use_nicer = (info[9]->ToBoolean())->BooleanValue();
-    std::string media_config_string = std::string(*json_param);
     json media_config = json::parse(media_config_string);
     std::vector<erizo::RtpMap> rtp_mappings;
 
@@ -153,10 +151,8 @@ NAN_METHOD(WebRtcConnection::New) {
           json format_params_json = it.value()["formatParameters"];
           for (json::iterator params_it = format_params_json.begin();
               params_it != format_params_json.end(); ++params_it) {
-            std::string value = params_it.value();
-            std::string key = params_it.key();
             rtp_map.format_parameters.insert(rtp_map.format_parameters.begin(),
-                std::pair<std::string, std::string> (key, value));
+                std::pair<std::string, std::string> (params_it.key(), params_it.value()));
           }
         }
         if (it.value()["feedbackTypes"].is_array()) {
@@ -181,22 +177,18 @@ NAN_METHOD(WebRtcConnection::New) {
 
     erizo::IceConfig iceConfig;
     if (info.Length() == 16) {
-      v8::String::Utf8Value param2(Nan::To<v8::String>(info[10]).ToLocalChecked());
-      std::string turnServer = std::string(*param2);
+      std::string turnServer = getString(info[10]);
       int turnPort = info[11]->IntegerValue();
-      v8::String::Utf8Value param3(Nan::To<v8::String>(info[12]).ToLocalChecked());
-      std::string turnUsername = std::string(*param3);
-      v8::String::Utf8Value param4(Nan::To<v8::String>(info[13]).ToLocalChecked());
-      std::string turnPass = std::string(*param4);
-      v8::String::Utf8Value param5(Nan::To<v8::String>(info[14]).ToLocalChecked());
-      std::string network_interface = std::string(*param5);
+      std::string turnUsername = getString(info[12]);
+      std::string turnPass = getString(info[13]);
+      std::string network_interface = getString(info[14]);
 
       std::vector<std::string> ipAddresses;
       Local<v8::Array> array = Local<v8::Array>::Cast(info[15]);
       for (unsigned int i = 0; i < array->Length(); i++) {
         if (Nan::Has(array, i).FromJust()) {
-          v8::String::Utf8Value addr(Nan::To<v8::String>(Nan::Get(array, i).ToLocalChecked()).ToLocalChecked());
-          ipAddresses.push_back(std::string(*addr));
+          std::string addr = getString(Nan::Get(array, i).ToLocalChecked());
+          ipAddresses.push_back(addr);
         }
       }
 
@@ -262,8 +254,9 @@ NAN_METHOD(WebRtcConnection::close) {
   obj->me.reset();
   obj->hasCallback_ = false;
 
-  if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(&obj->async_))) {
-    uv_close(reinterpret_cast<uv_handle_t*>(&obj->async_), NULL);
+  uv_handle_t* handle = reinterpret_cast<uv_handle_t*>(&obj->async_);
+  if (!uv_is_closing(handle)) {
+    uv_close(handle, NULL);
   }
 }
 
@@ -298,14 +291,10 @@ NAN_METHOD(WebRtcConnection::setRemoteSdp) {
     return;
   }
 
-  v8::String::Utf8Value param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string sdp = std::string(*param);
-
-  v8::String::Utf8Value stream_id_param(Nan::To<v8::String>(info[1]).ToLocalChecked());
-  std::string stream_id = std::string(*stream_id_param);
+  std::string sdp = getString(info[0]);
+  std::string stream_id = getString(info[1]);
 
   bool r = me->setRemoteSdp(sdp, stream_id);
-
   info.GetReturnValue().Set(Nan::New(r));
 }
 
@@ -313,13 +302,9 @@ NAN_METHOD(WebRtcConnection::addRemoteCandidate) {
   WebRtcConnection* obj = Nan::ObjectWrap::Unwrap<WebRtcConnection>(info.Holder());
   std::shared_ptr<erizo::WebRtcConnection> me = obj->me;
 
-  v8::String::Utf8Value param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string mid = std::string(*param);
-
+  std::string mid = getString(info[0]);
   int sdpMLine = info[1]->IntegerValue();
-
-  v8::String::Utf8Value param2(Nan::To<v8::String>(info[2]).ToLocalChecked());
-  std::string sdp = std::string(*param2);
+  std::string sdp = getString(info[2]);
 
   bool r = me->addRemoteCandidate(mid, sdpMLine, sdp);
 
@@ -330,13 +315,9 @@ NAN_METHOD(WebRtcConnection::removeRemoteCandidate) {
   WebRtcConnection* obj = Nan::ObjectWrap::Unwrap<WebRtcConnection>(info.Holder());
   std::shared_ptr<erizo::WebRtcConnection> me = obj->me;
 
-  v8::String::Utf8Value param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string mid = std::string(*param);
-
+  std::string mid = getString(info[0]);
   int sdpMLine = info[1]->IntegerValue();
-
-  v8::String::Utf8Value param2(Nan::To<v8::String>(info[2]).ToLocalChecked());
-  std::string sdp = std::string(*param2);
+  std::string sdp = getString(info[2]);
 
   bool r = me->removeRemoteCandidate(mid, sdpMLine, sdp);
   info.GetReturnValue().Set(Nan::New(r));
@@ -362,8 +343,8 @@ NAN_METHOD(WebRtcConnection::removeMediaStream) {
     return;
   }
 
-  v8::String::Utf8Value param(Nan::To<v8::String>(info[0]).ToLocalChecked());
-  std::string streamId = std::string(*param);
+  std::string streamId = getString(info[0]);
+
   me->removeMediaStream(streamId);
 }
 

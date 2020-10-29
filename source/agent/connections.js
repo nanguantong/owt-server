@@ -21,26 +21,28 @@ module.exports = function Connections () {
         connections = {};
 
     var cutOffFrom = function (connectionId) {
+        var conn = connections[connectionId];
         log.debug('remove subscriptions from connection:', connectionId);
-        if (connections[connectionId] && connections[connectionId].direction === 'in') {
+        if (conn && conn.direction === 'in') {
             for (var connection_id in connections) {
-                if (connections[connection_id].direction === 'out') {
-                    if (connections[connection_id].audioFrom === connectionId) {
-                        log.debug('remove audio subscription:', connections[connection_id].audioFrom);
-                        var dest = connections[connection_id].connection.receiver('audio');
+                var connection = connections[connection_id];
+                if (connection.direction === 'out') {
+                    if (connection.audioFrom === connectionId) {
+                        log.debug('remove audio subscription:', connection.audioFrom);
+                        var dest = connection.connection.receiver('audio');
                         if (dest) {
-                            connections[connectionId].connection.removeDestination('audio', dest);
+                            conn.connection.removeDestination('audio', dest);
                         }
-                        connections[connection_id].audioFrom = undefined;
+                        connection.audioFrom = undefined;
                     }
 
-                    if (connections[connection_id].videoFrom === connectionId) {
-                        log.debug('remove video subscription:', connections[connection_id].videoFrom);
-                        var dest = connections[connection_id].connection.receiver('video');
+                    if (connection.videoFrom === connectionId) {
+                        log.debug('remove video subscription:', connection.videoFrom);
+                        var dest = connection.connection.receiver('video');
                         if (dest) {
-                            connections[connectionId].connection.removeDestination('video', dest);
+                            conn.connection.removeDestination('video', dest);
                         }
-                        connections[connection_id].videoFrom = undefined;
+                        connection.videoFrom = undefined;
                     }
                 }
             }
@@ -49,22 +51,23 @@ module.exports = function Connections () {
 
     var cutOffTo = function (connectionId) {
         log.debug('remove subscription to connection:', connectionId);
-        if (connections[connectionId] && connections[connectionId].direction === 'out') {
-            var audioFrom = connections[connectionId].audioFrom,
-                videoFrom = connections[connectionId].videoFrom;
+        var conn = connections[connectionId];
+        if (conn && conn.direction === 'out') {
+            var audioFrom = conn.audioFrom,
+                videoFrom = conn.videoFrom;
 
             if (audioFrom && connections[audioFrom] && connections[audioFrom].direction === 'in') {
                 log.debug('remove audio from:', audioFrom);
-                var dest = connections[connectionId].connection.receiver('audio');
+                var dest = conn.connection.receiver('audio');
                 connections[audioFrom].connection.removeDestination('audio', dest);
-                connections[connectionId].audioFrom = undefined;
+                conn.audioFrom = undefined;
             }
 
             if (videoFrom && connections[videoFrom] && connections[videoFrom].direction === 'in') {
                 log.debug('remove video from:', videoFrom);
-                var dest = connections[connectionId].connection.receiver('video');
+                var dest = conn.connection.receiver('video');
                 connections[videoFrom].connection.removeDestination('video', dest);
-                connections[connectionId].videoFrom = undefined;
+                conn.videoFrom = undefined;
             }
         }
     };
@@ -90,8 +93,9 @@ module.exports = function Connections () {
 
     that.removeConnection = function (connectionId) {
         log.debug('Remove connection:', connectionId);
-        if (connections[connectionId] !== undefined) {
-            if (connections[connectionId].direction === 'in') {
+        var conn = connections[connectionId];
+        if (conn !== undefined) {
+            if (conn.direction === 'in') {
                 cutOffFrom(connectionId);
             } else {
                 cutOffTo(connectionId);
@@ -108,7 +112,8 @@ module.exports = function Connections () {
 
     that.linkupConnection = function (connectionId, audioFrom, videoFrom) {
         log.debug('linkup, connectionId:', connectionId, ', audioFrom:', audioFrom, ', videoFrom:', videoFrom);
-        if (!connectionId || !connections[connectionId]) {
+        var conn = connections[connectionId];
+        if (!connectionId || !conn) {
             log.error('Subscription does not exist:' + connectionId);
             return Promise.reject('Subscription does not exist:' + connectionId);
         }
@@ -123,13 +128,11 @@ module.exports = function Connections () {
             return Promise.reject({type: 'failed', reason: 'Video stream does not exist:' + videoFrom});
         }
 
-        var conn = connections[connectionId];
-
         if (audioFrom) {
             var dest = conn.connection.receiver('audio');
             if (dest) {
                 connections[audioFrom].connection.addDestination('audio', dest);
-                connections[connectionId].audioFrom = audioFrom;
+                conn.audioFrom = audioFrom;
             } else {
                 return Promise.reject({type: 'failed', reason: 'Destination connection(audio) is not ready'});
             }
@@ -139,7 +142,7 @@ module.exports = function Connections () {
             var dest = conn.connection.receiver('video');
             if (dest) {
                 connections[videoFrom].connection.addDestination('video', dest);
-                connections[connectionId].videoFrom = videoFrom;
+                conn.videoFrom = videoFrom;
             } else {
                 return Promise.reject({type: 'failed', reason: 'Destination connection(video) is not ready'});
             }
@@ -150,8 +153,9 @@ module.exports = function Connections () {
 
     that.cutoffConnection = function (connectionId) {
         log.debug('cutoff, connectionId:', connectionId);
-        if (connections[connectionId]) {
-            if (connections[connectionId].direction === 'in') {
+        var conn = connections[connectionId];
+        if (conn) {
+            if (conn.direction === 'in') {
                 cutOffFrom(connectionId);
             } else {
                 cutOffTo(connectionId);
@@ -174,7 +178,9 @@ module.exports = function Connections () {
     that.onFaultDetected = function (message) {
         if (message.purpose === 'conference') {
             for (var conn_id in connections) {
-                if ((message.type === 'node' && message.id === connections[conn_id].controller) || (message.type === 'worker' && connections[conn_id].controller.startsWith(message.id))) {
+                var conn = connections[conn_id];
+                if ((message.type === 'node' && message.id === conn.controller) || 
+                    (message.type === 'worker' && conn.controller.startsWith(message.id))) {
                     log.error('Fault detected on controller (type:', message.type, 'id:', message.id, ') of connection:', conn_id , 'and remove it');
                     that.removeConnection(conn_id);
                 }

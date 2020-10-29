@@ -23,7 +23,7 @@ var RpcRequest = function(rpcChannel) {
 
   that.recycleWorkerNode = function(workerAgent, workerNode, forWhom) {
     return rpcChannel.makeRPC(workerAgent, 'recycleNode', [workerNode, forWhom])
-      . catch((result) => {
+      .catch((result) => {
         return 'ok';
       }, (err) => {
         return 'ok';
