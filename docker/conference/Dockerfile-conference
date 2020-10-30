@@ -4,6 +4,6 @@
 FROM owt-server-conference-install:latest
 
 WORKDIR /owt-server
-RUN ./scripts/build.js -t all --check
-RUN ./scripts/pack.js -t all --install-module --app-path ${APP_PATH} .
-RUN ./dist/video_agent/install_openh264.sh
+RUN ./scripts/build.js -t all --check && \
+    ./scripts/pack.js -t all --install-module --app-path ${APP_PATH} . && \
+    ./dist/video_agent/install_openh264.sh

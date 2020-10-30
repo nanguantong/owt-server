@@ -15,26 +15,17 @@ ARG OWTSERVER_REPO=https://github.com/nanguantong/owt-server.git
 ARG OWT_SDK_REPO=https://github.com/open-webrtc-toolkit/owt-client-javascript.git
 ARG OWT_BRANCH=master
 
-RUN git config --global user.email "zww0602jsj@gmail.com" && \
-    git config --global user.name "nanguantong" && \
-    git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO}
-
 # Build libnice
 ARG NICE_VER="0.1.4"
 ARG NICE_REPO=http://nice.freedesktop.org/releases/libnice-${NICE_VER}.tar.gz
-# ARG LIBNICE_PATCH_VER="4.3"
-# ARG LIBNICE_PATCH_REPO=https://github.com/open-webrtc-toolkit/owt-server/archive/v${LIBNICE_PATCH_VER}.tar.gz
 
-RUN apt-get update && apt-get install -y -q --no-install-recommends libglib2.0-dev
+RUN apt-get update && apt-get install -y -q --no-install-recommends libglib2.0-dev && \
+    git config --global user.email "zww0602jsj@gmail.com" && \
+    git config --global user.name "nanguantong" && \
+    git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO}
 
 RUN wget -O - ${NICE_REPO} | tar xz && \
     cd libnice-${NICE_VER} && \
-    # wget -O - ${LIBNICE_PATCH_REPO} | tar xz  && \
-    # patch -p1 < owt-server-${LIBNICE_PATCH_VER}/scripts/patches/libnice014-agentlock.patch && \
-    # patch -p1 < owt-server-${LIBNICE_PATCH_VER}/scripts/patches/libnice014-agentlock-plus.patch && \
-    # patch -p1 < owt-server-${LIBNICE_PATCH_VER}/scripts/patches/libnice014-removecandidate.patch && \
-    # patch -p1 < owt-server-${LIBNICE_PATCH_VER}/scripts/patches/libnice014-keepalive.patch && \
-    # patch -p1 < owt-server-${LIBNICE_PATCH_VER}/scripts/patches/libnice014-startcheck.patch && \
     patch -p1 < ${SERVER_PATH}/scripts/patches/libnice014-agentlock.patch && \
     patch -p1 < ${SERVER_PATH}/scripts/patches/libnice014-agentlock-plus.patch && \
     patch -p1 < ${SERVER_PATH}/scripts/patches/libnice014-removecandidate.patch && \
@@ -70,7 +61,6 @@ RUN git clone ${LIBRE_REPO} && \
 
 
 # Build usrsctp
-# ARG USRSCTP_VERSION="30d7f1bd0b58499e1e1f2415e84d76d951665dc8"
 ARG USRSCTP_VERSION="862f4f5c561bc12b0b9f80b302d53736c6b2507e"
 ARG USRSCTP_FILE="${USRSCTP_VERSION}.tar.gz"
 ARG USRSCTP_EXTRACT="usrsctp-${USRSCTP_VERSION}"
@@ -103,15 +93,15 @@ RUN curl -o libsrtp-${SRTP2_VER}.tar.gz ${SRTP2_REPO} && \
 # Fetch fdkaac source
 ARG FDKAAC_VER="2.0.1"
 ARG FDKAAC_DIR="fdk-aac-${FDKAAC_VER}"
-ARG FDKAAC_SRC="${FDKAAC_DIR}.tar.bz2"
+ARG FDKAAC_SRC="${FDKAAC_DIR}.tar.gz"
 ARG FDKAAC_SRC_URL="http://sourceforge.net/projects/opencore-amr/files/fdk-aac/${FDKAAC_SRC}/download"
 ARG FDKAAC_SRC_MD5SUM="e8b0b38e837df455b8a1ba75417ff0ad"
 
-RUN wget ${FDKAAC_SRC_URL} && tar xf ${FDKAAC_SRC} && mv ${FDKAAC_DIR} fdkaac && \
-    cd fdkaac  ;
+RUN wget -c ${FDKAAC_SRC_URL} -O ${FDKAAC_SRC} && tar xf ${FDKAAC_SRC} && mv ${FDKAAC_DIR} fdkaac && \
 # Compile fdkaac
-RUN cd /home/fdkaac && \
-    ./configure --prefix="/usr/local" --enable-shared --disable-static && \
+    cd fdkaac && \
+    export PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig" && \
+    ./configure --prefix="/usr/local" --libdir=/usr/local/lib/x86_64-linux-gnu --enable-shared --disable-static && \
     make -j8 && \
     make install
 
@@ -123,10 +113,9 @@ ARG FFMPEG_SRC="${FFMPEG_DIR}.tar.bz2"
 ARG FFMPEG_SRC_URL="http://ffmpeg.org/releases/${FFMPEG_SRC}"
 ARG FFMPEG_SRC_MD5SUM="9985185a8de3678e5b55b1c63276f8b5"
 
-RUN wget ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg && \
-    cd FFmpeg  ;
+RUN wget -c ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg && \
 # Compile FFmpeg
-RUN cd /home/FFmpeg && \
+    cd FFmpeg && \
     export PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig" && \
     ./configure --prefix="/usr/local" --libdir=/usr/local/lib/x86_64-linux-gnu --enable-shared --disable-static --disable-libvpx --disable-vaapi --enable-libfreetype --enable-libfdk-aac --enable-nonfree && \
     make -j8 && \
@@ -153,7 +142,7 @@ RUN git clone ${SVT_HEVC_REPO} && \
     mkdir -p ../../Bin/Release && \
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib/x86_64-linux-gnu -DCMAKE_ASM_NASM_COMPILER=yasm ../.. && \
     make -j8 && \
-    make install 
+    make install
 
 
 # Install json_hpp
@@ -198,8 +187,8 @@ RUN npm install -g --loglevel error node-gyp@6.1.0 grunt-cli underscore jsdoc &&
     # Get openh264 for owt
     cd third_party && \
     mkdir openh264 && cd openh264 && \
-    wget ${OPENH264_SOURCE} && \
-    wget ${OPENH264_BINARY} && \
+    wget ${OPENH264_SOURCE} --no-check-certificate && \
+    wget ${OPENH264_BINARY} --no-check-certificate && \
     tar xzf ${OPENH264_SOURCENAME} openh264-${OPENH264_VER}/codec/api && \
     ln -s -v openh264-${OPENH264_VER}/codec codec && \
     bzip2 -d ${OPENH264_BINARYNAME}.bz2 && \
@@ -230,9 +219,9 @@ RUN mkdir ${SERVER_PATH}/third_party/webrtc-m79 && \
 RUN cd /home && git clone --depth=1 -b ${OWT_BRANCH} ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm install && grunt && \
     mkdir ${SERVER_PATH}/third_party/quic-lib && \
     export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu && \
-    cd ${SERVER_PATH}/third_party/quic-lib && wget https://github.com/open-webrtc-toolkit/owt-deps-quic/releases/download/v0.1/dist.tgz && tar xzf dist.tgz && \
+    cd ${SERVER_PATH}/third_party/quic-lib && wget --no-check-certificate https://github.com/open-webrtc-toolkit/owt-deps-quic/releases/download/v0.1/dist.tgz && tar xzf dist.tgz && \
     #Build and pack owt
-    cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu-all -r -c && \
+    cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu -r -c && \
     ./scripts/pack.js -t all --install-module --no-pseudo --app-path /home/owt-client-javascript/dist/samples/conference
 
 
