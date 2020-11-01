@@ -48,7 +48,7 @@ using v8::Exception;
 using v8::Value;
 using json = nlohmann::json;
 
-std::string getString(v8::Local<v8::Value> value) {
+static std::string getString(v8::Local<v8::Value> value) {
   v8::String::Utf8Value value_str(Nan::To<v8::String>(value).ToLocalChecked()); \
   return std::string(*value_str);
 }

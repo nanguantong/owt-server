@@ -185,7 +185,7 @@ void FFmpegDrawText::deinit()
     m_buffersink_ctx = NULL;
 }
 
-int FFmpegDrawText::configure(std::string arg)
+int FFmpegDrawText::configure(const std::string& arg)
 {
     int ret;
 
@@ -205,7 +205,7 @@ int FFmpegDrawText::configure(std::string arg)
     return 1;
 }
 
-int FFmpegDrawText::setText(std::string arg)
+int FFmpegDrawText::setText(const std::string& arg)
 {
     m_filter_desc = arg;
     m_reconfigured = true;

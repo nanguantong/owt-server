@@ -33,12 +33,12 @@ public:
     ~FFmpegDrawText();
 
     int drawFrame(Frame&);
-    int setText(std::string arg);
+    int setText(const std::string& arg);
     void enable(bool enabled) {m_enabled = enabled;}
 
 protected:
     bool init(int width, int height);
-    int configure(std::string arg);
+    int configure(const std::string& arg);
     void deinit();
 
     int copyFrame(AVFrame *dstAVFrame, Frame &srcFrame);
