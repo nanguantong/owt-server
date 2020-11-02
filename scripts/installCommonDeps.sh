@@ -178,6 +178,7 @@ install_openh264(){
 
   MAJOR=2
   MINOR=1
+  PATCH=1
   SOVER=6
 
   rm $ROOT/third_party/openh264 -rf
@@ -188,16 +189,16 @@ install_openh264(){
   # license
   wget https://www.openh264.org/BINARY_LICENSE.txt
 
-  SOURCE=v${MAJOR}.${MINOR}.0.tar.gz
-  BINARY=libopenh264-${MAJOR}.${MINOR}.0-linux64.${SOVER}.so
+  SOURCE=v${MAJOR}.${MINOR}.${PATCH}.tar.gz
+  BINARY=libopenh264-${MAJOR}.${MINOR}.${PATCH}-linux64.${SOVER}.so
 
   # download
   wget https://github.com/cisco/openh264/archive/${SOURCE}
-  wget -c https://github.com/cisco/openh264/releases/download/v${MAJOR}.${MINOR}.0/${BINARY}.bz2
+  wget -c https://github.com/cisco/openh264/releases/download/v${MAJOR}.${MINOR}.${PATCH}/${BINARY}.bz2
 
   # api
-  tar -zxf ${SOURCE} openh264-${MAJOR}.${MINOR}.0/codec/api
-  ln -s -v openh264-${MAJOR}.${MINOR}.0/codec codec
+  tar -zxf ${SOURCE} openh264-${MAJOR}.${MINOR}.${PATCH}/codec/api
+  ln -s -v openh264-${MAJOR}.${MINOR}.${PATCH}/codec codec
 
   # binary
   bzip2 -d ${BINARY}.bz2
