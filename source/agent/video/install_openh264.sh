@@ -31,4 +31,4 @@ enable_openh264() {
   echo "OpenH264 install finished."
 }
 
-download_openh264 && enable_openh264
+[ ! -f ${this}/lib/dummyopenh264.so ] && download_openh264 && enable_openh264
