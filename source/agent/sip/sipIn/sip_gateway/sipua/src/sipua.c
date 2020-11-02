@@ -16,7 +16,7 @@
 
 struct sipua_entity {         /* sip ua entity */
 	void *ep;
-	struct le le;             /**< Linked list element                */
+	struct le le;             /**< Linked list element */
 	struct mqueue *mq;
 	struct uag *uag;
 	pthread_t     thid;
@@ -57,7 +57,7 @@ static int construct_uag(struct uag **uagp, void *ep, const char *sip_server, co
 
     sprintf(account_str, "%.128s <sip:%.128s:%.64s@%.128s>\n", disp_name, user_name, password, sip_server);
 
-	err = uag_alloc(uagp, "Intel Integrated SIPUA", ep, sipua_trans_udp ? true : false, sipua_trans_tcp ? true : false, sipua_trans_tls ? true : false, sipua_prefer_ipv6 ? true : false);
+	err = uag_alloc(uagp, "Nan SIPUA", ep, sipua_trans_udp ? true : false, sipua_trans_tcp ? true : false, sipua_trans_tls ? true : false, sipua_prefer_ipv6 ? true : false);
 	if (err){
 		*uagp = NULL;
 		goto out;
@@ -69,7 +69,6 @@ static int construct_uag(struct uag **uagp, void *ep, const char *sip_server, co
 		*uagp = NULL;
 		goto out;
 	}
-
 
 out:
 	return err;
@@ -120,13 +119,12 @@ static void sipua_destructor(void *arg)
 {
 	struct sipua_entity *sipua = arg;
 
-        if (sipua->mq) {
+	if (sipua->mq) {
 		mqueue_push(sipua->mq, SIPUA_TERMINATE, NULL);
 	}
 
 	list_unlink(&sipua->le);
 }
-
 
 static void *dnsc_run(void *arg)
 {
@@ -172,10 +170,10 @@ int sipua_new(struct sipua_entity **sipuap, void *endpoint, const char *sip_serv
 
     params.ep = endpoint;
     /*memcpy((void *)&params.cfg, (void *)cfg, sizeof(struct uag_cfg));*/
-    strncpy(params.sip_server, sip_server, 127);
-    strncpy(params.user_name, user_name, 63);
-    strncpy(params.password, password, 63);
-    strncpy(params.disp_name, disp_name, 63);
+    strncpy(params.sip_server, sip_server, sizeof(params.sip_server) - 1);
+    strncpy(params.user_name, user_name, sizeof(params.user_name) - 1);
+    strncpy(params.password, password, sizeof(params.password) - 1);
+    strncpy(params.disp_name, disp_name, sizeof(params.disp_name) - 1);
 
 	pthread_create(&thread, NULL, sipua_run, (void *)&params);
 	n = read(params.pfd[0], &rslt, sizeof(struct new_sipua_rslt));
