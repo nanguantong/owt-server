@@ -25,7 +25,6 @@ public:
     virtual void onCallUpdated(const std::string& peerURI, const char *audioDir, const char *videoDir) = 0;
     virtual void onSipAudioFmt(const std::string& peer, const std::string& codecName, unsigned int sampleRate) = 0;
     virtual void onSipVideoFmt(const std::string& peer, const std::string& codecName, unsigned int rtpClock, const std::string& fmtp) = 0;
-
 };
 
 

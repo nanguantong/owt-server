@@ -653,7 +653,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
                 var client_id = 'SipIn' + Math.round(Math.random() * 10000000000000);
                 handleIncomingCall(client_id, peerURI, function () {
                     log.debug('Accept call');
-                    gateway.accept(peerURI);
+                    gateway.accept(peerURI); // TODO: add requireAudio and requireVideo
                 }, function (reason) {
                     log.error('reject call error: ', reason);
                     gateway.reject(peerURI);

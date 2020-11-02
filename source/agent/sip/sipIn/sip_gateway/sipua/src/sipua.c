@@ -184,7 +184,6 @@ int sipua_new(struct sipua_entity **sipuap, void *endpoint, const char *sip_serv
 	if (params.pfd[1] >= 0)
 		(void)close(params.pfd[1]);
 
-	/*sipua->thid = thread;*/
 	sipua->mq = rslt.mq;
 	sipua->uag = rslt.uag;
 	sipua->thid = thread;
@@ -203,9 +202,8 @@ out:
 
 void sipua_delete(struct sipua_entity *sipua)
 {
-	pthread_t thread = sipua->thid;
 	mem_deref(sipua);
-	pthread_join(thread, NULL);
+	pthread_join(sipua->thid, NULL);
 }
 
 int sipua_mod_init(void/*const char *dlpath*/)

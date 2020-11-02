@@ -55,7 +55,7 @@ public:
      * Implements Addon(SipGateway.cc) interfaces
      */
     bool sipRegister(const std::string& sipServerAddr, const std::string& userName,
-                               const std::string& password, const std::string& displayName);
+                     const std::string& password, const std::string& displayName);
     bool makeCall(const std::string& calleeURI, bool requireAudio, bool requireVideo);
     void hangup(const std::string& peer);
     bool accept(const std::string& peer);
