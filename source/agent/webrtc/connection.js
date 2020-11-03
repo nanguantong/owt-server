@@ -106,6 +106,8 @@ class Connection extends EventEmitter {
               `mediaStreamId: ${id}, isPublisher: ${isPublisher}`);
     const mediaStream = new addon.MediaStream(this.threadPool, this.wrtc, id,
       options.label, this._getMediaConfiguration(this.mediaConfiguration), isPublisher);
+    mediaStream.id = id;
+    mediaStream.label = options.label;
     if (options.metadata) {
       // mediaStream.metadata = options.metadata;
       // mediaStream.setMetadata(JSON.stringify(options.metadata));

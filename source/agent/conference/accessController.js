@@ -180,7 +180,7 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
     log.debug('participantLeave, participantId:', participantId);
     var pl = [];
     for (var session_id in sessions) {
-      var session = sessions[sessionId];
+      var session = sessions[session_id];
       if (session.owner === participantId) {
         pl.push(terminateSession(session_id));
         on_session_aborted(session.owner, session_id, session.direction, 'Participant leave');

@@ -164,7 +164,7 @@ index 25f9224..0e62821 100644
  
  
 -  static const char *SDP_IDENTIFIER = "LicodeMCU";
-+  static const char *SDP_IDENTIFIER = "IntelWebRTCMCU";
++  static const char *SDP_IDENTIFIER = "NanWebRTCMCU";
    static const char *cand = "a=candidate:";
    static const char *crypto = "a=crypto:";
    static const char *group = "a=group:";
