@@ -62,7 +62,7 @@ fi
 if [ ! -z "${externalip}" ] && [ ! -z "{network_interface}" ];then
     echo ${externalip}
     sed -i "/^network_interfaces =/c \network_interfaces = [{name = \"${networkinterface}\", replaced_ip_address = \"${externalip}\"}]" webrtc_agent/agent.toml
-    sed -i "/^ip_address = /c \ip_address =  \"${externalip}\"" portal/portal.toml  
+    sed -i "/^ip_address = /c \ip_address = \"${externalip}\"" portal/portal.toml  
 fi
 
 ./management_api/init.sh --dburl=${mongourl}
