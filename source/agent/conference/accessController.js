@@ -62,17 +62,15 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
 
     if (session.options.type === 'webrtc') {
       if (!!session.options.media.audio && !audio) {
-        var owner = session.owner, direction = session.direction;
         terminateSession(sessionId).catch((whatever) => {});
-        on_session_aborted(owner, sessionId, direction, 'No proper audio codec');
+        on_session_aborted(session.owner, sessionId, session.direction, 'No proper audio codec');
         log.error('No proper audio codec');
         return;
       }
 
       if (!!session.options.media.video && !video) {
-        var owner = session.owner, direction = session.direction;
         terminateSession(sessionId).catch((whatever) => {});
-        on_session_aborted(owner, sessionId, direction, 'No proper video codec');
+        on_session_aborted(session.owner, sessionId, session.direction, 'No proper video codec');
         log.error('No proper video codec');
         return;
       }
@@ -146,6 +144,7 @@ module.exports.create = function(spec, rpcReq, onSessionEstablished, onSessionAb
   that.onSessionStatus = (sessionId, status) => {
     var session = sessions[sessionId];
     if (!session) {
+      log.error('Session ' + sessionId + ' does NOT exist');
       return Promise.reject('Session ' + sessionId + ' does NOT exist');
     }
 

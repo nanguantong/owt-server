@@ -384,7 +384,7 @@ install_libre() {
     rm -rf re
     git clone https://github.com/creytiv/re.git
     pushd re >/dev/null
-    #git checkout v0.5.0
+    git checkout v0.5.0
     make SYSROOT_ALT=${PREFIX_DIR} RELEASE=1
     make install SYSROOT_ALT=${PREFIX_DIR} RELEASE=1 PREFIX=${PREFIX_DIR}
     popd >/dev/null

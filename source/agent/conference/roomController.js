@@ -1279,7 +1279,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         var stream = streams[stream_id];
         if (stream) {
             log.debug('unpublishStream:', stream_id, 'stream.owner:', stream.owner);
-            var terminal = terminals[stream.owner];
+            var terminal = terminals[stream.owner],
                 node = terminal.locality.node;
 
             var i = terminal.published.indexOf(stream_id);

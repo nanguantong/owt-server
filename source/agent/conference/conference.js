@@ -392,10 +392,11 @@ var Conference = function (rpcClient, selfRpcId) {
                       return;
                     }
 
-                    var mixed_stream_info = Stream.createMixStream(room_id, viewSettings, room_config.mediaOut, av_capability);
                     var mixed_stream_id = room_id + '-' + viewSettings.label;
+                    var mixed_stream_info = Stream.createMixStream(room_id, viewSettings, room_config.mediaOut, av_capability);
+
+                    mixed_stream_info.info.origin = origin;
                     streams[mixed_stream_id] = mixed_stream_info;
-                    streams[mixed_stream_id].info.origin = origin;
                     log.debug('Mixed stream info:', mixed_stream_info);
                     room_config.notifying.streamChange &&
                       sendMsg('room', 'all', 'stream', {id: mixed_stream_id, status: 'add', data: Stream.toPortalFormat(mixed_stream_info)});
@@ -599,7 +600,7 @@ var Conference = function (rpcClient, selfRpcId) {
 
     var isReadded = !!(streams[id] && !streams[id].isInConnecting);
     var origin = { isp:'isp', region:'region'};
-    if (streams[id] != null && streams[id].info != null) {
+    if (streams[id]) {
       origin = streams[id].info.origin;
     }
     info.origin = origin;
@@ -635,16 +636,18 @@ var Conference = function (rpcClient, selfRpcId) {
 
   const removeStream = (streamId) => {
     return new Promise((resolve, reject) => {
-      if (streams[streamId]) {
+      var stream = streams[streamId];
+      if (stream) {
         for (var sub_id in subscriptions) {
-          if ((subscriptions[sub_id].media.audio && (subscriptions[sub_id].media.audio.from === streamId))
-            || (subscriptions[sub_id].media.video && (subscriptions[sub_id].media.video.from === streamId))) {
+          var subscription = subscriptions[sub_id];
+          if ((subscription.media.audio && (subscription.media.audio.from === streamId))
+            || (subscription.media.video && (subscription.media.video.from === streamId))) {
             accessController && accessController.terminate(sub_id, 'out', 'Source stream loss');
           }
         }
 
-        if (!streams[streamId].isInConnecting) {
-          roomController && roomController.unpublish(streams[streamId].info.owner, streamId);
+        if (!stream.isInConnecting) {
+          roomController && roomController.unpublish(stream.info.owner, streamId);
         }
         delete streams[streamId];
         setTimeout(() => {
