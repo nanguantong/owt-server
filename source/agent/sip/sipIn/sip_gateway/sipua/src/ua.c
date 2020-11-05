@@ -251,7 +251,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 		case ANSWERMODE_MANUAL:
 		default:
-                        ua_printf(ua, "Call incomming: %s owner ep %p\n", peeruri, ua->owner->ep);
+			ua_printf(ua, "Call incomming: %s owner ep %p\n", peeruri, ua->owner->ep);
 			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 			ep_incoming_call(ua->owner->ep,
 				             call_has_audio(call) ? 1 : 0,
@@ -283,7 +283,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		if (call_get_owner(call)) {
 			call_connection_closed(call_get_owner(call));
 		}
-    ep_call_closed(ua->owner->ep, peeruri, str);
+		ep_call_closed(ua->owner->ep, peeruri, str);
 		mem_deref(call);
 
 		resume_call(ua);

@@ -100,7 +100,7 @@ var ClusterManager = function (clusterName, selfId, spec) {
         if (state === 'in-service') {
             if (schedulers[purpose]) {
                 schedulers[purpose].schedule(task, preference, reserveTime, function(worker, info) {
-                    log.debug('schedule OK, got  worker', worker);
+                    log.debug('schedule OK, got worker', worker);
                     on_ok(worker, info);
                     data_synchronizer && data_synchronizer({type: 'scheduled', payload: {purpose: purpose, task: task, worker: worker, reserve_time: reserveTime}});
                 }, function (reason) {

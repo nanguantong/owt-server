@@ -46,7 +46,7 @@ function do_join(conference_ctl, user_id, user_name, room, selfPortal, ok, err) 
             log.debug('join ok');
             safeCall(ok, joinResult.room.streams);
         }, function (reason) {
-            safeCall(err,reason);
+            safeCall(err, reason);
         });
 }
 
@@ -59,8 +59,8 @@ function do_leave(conference_ctl, user) {
         function() {
             log.debug('leave ok');
         });
-
 }
+
 function do_query(conference_ctl, user, room, ok, err) {
     makeRPC(
         rpcClient,
@@ -143,8 +143,8 @@ var getConferenceControllerForRoom = function (roomId, on_ok, on_error) {
 
         makeRPC(rpcClient, cluster_name, 'schedule', ['conference', roomId, 'preference'/*FIXME:should fill-in actual preference*/, 60 * 1000],
             function (result) {
-                makeRPC(rpcClient, result.id, 'getNode', [{room: roomId, task: roomId}], function (ConferenceController) {
-                    on_ok(ConferenceController);
+                makeRPC(rpcClient, result.id, 'getNode', [{room: roomId, task: roomId}], function (conferenceController) {
+                    on_ok(conferenceController);
                     keepTrying = false;
                 }, function(reason) {
                     if (keepTrying) {
@@ -246,28 +246,42 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
       return null;
     };
 
+    var getCall = function(peerURI) {
+        for (var c_id in calls) {
+          var call = calls[c_id];
+          if (call.peerURI === peerURI) {
+            return call;
+          }
+        }
+        return null;
+    };
+
     var handleIncomingCall = function (client_id, peerURI, on_ok, on_error) {
         getConferenceControllerForRoom(room_id, function(result) {
             var conference_controller = result;
-            calls[client_id] = {conference_controller: conference_controller, peerURI: peerURI};
+            var call = {conference_controller: conference_controller, peerURI: peerURI};
+            calls[client_id] = call;
             do_join(conference_controller, client_id, peerURI, room_id, erizo.id, function(streamList) {
                 for (var index in streamList) {
-                    if (streamList[index].type === 'mixed') {
-                        if (streamList[index].info.label === 'common') {
-                            calls[client_id].videoSource = streamList[index];
-                            calls[client_id].audioSource = streamList[index];
+                    var stream = streamList[index];
+                    if (stream.type === 'mixed') {
+                        if (stream.info.label === 'common') {
+                            call.videoSource = stream;
+                            call.audioSource = stream;
                             break;
                         }
                     }
                 }
 
-                if (calls[client_id].videoSource || calls[client_id].audioSource){
+                if (call.videoSource || call.audioSource) {
                     on_ok();
                 } else {
                     do_leave(conference_controller, client_id);
+                    delete calls[client_id];
                     on_error('No mixed stream in room.');
                 }
             }, function (err) {
+                delete calls[client_id];
                 on_error(err);
             });
         }, on_error);
@@ -275,12 +289,13 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     //TODO: should complete the following procedure to protect against the unexpected situations such as partial failure.
     var setupCall = function (client_id, info) {
-        var conference_controller = calls[client_id].conference_controller;
+        var call = calls[client_id];
+        var conference_controller = call.conference_controller;
 
         var published = Promise.resolve('ok');
         var subscribed = Promise.resolve('ok');
-
         var audio_info, video_info;
+
         if (info.audio) {
             var tmp;
             if (info.audio_codec === 'opus') {
@@ -312,8 +327,8 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
             var stream_id = Math.round(Math.random() * 1000000000000000000) + '';
 
             //TODO: the streams binding should be done in the success callback.
-            streams[stream_id] = {type: 'sip', connection: calls[client_id].conn};
-            calls[client_id].stream_id = stream_id;
+            streams[stream_id] = {type: 'sip', connection: call.conn};
+            call.stream_id = stream_id;
 
             var pubInfo = {type: 'sip', media: {}, locality: {agent:that.agentID, node: erizo.id}};
             if (info.audio && info.audio_dir !== 'sendonly') {
@@ -327,7 +342,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
                 pubInfo.media.video = false;
             }
 
-            published = do_publish(calls[client_id].conference_controller,
+            published = do_publish(call.conference_controller,
                                    client_id,
                                    stream_id,
                                    pubInfo);
@@ -337,25 +352,25 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
         if ((info.audio && info.audio_dir !== 'recvonly') || (info.video && info.video_dir !== 'recvonly')) {
             var subscription_id = Math.round(Math.random() * 1000000000000000000) + '';
             var subInfo = { type: 'sip', media: {}, locality: {agent:that.agentID, node: erizo.id} };
-            if (info.audio && info.audio_dir !== 'recvonly' && calls[client_id].audioSource) {
+            if (info.audio && info.audio_dir !== 'recvonly' && call.audioSource) {
                 subInfo.media.audio = {
-                    from: calls[client_id].audioSource.id,
+                    from: call.audioSource.id,
                     format: audio_info
                 };
             }
-            if (info.video && info.video_dir !== 'recvonly' && calls[client_id].videoSource) {
+            if (info.video && info.video_dir !== 'recvonly' && call.videoSource) {
                 subInfo.media.video = {
-                    from: calls[client_id].videoSource.id,
+                    from: call.videoSource.id,
                     format: {codec: video_info.codec, profile: video_info.profile}
                 };
 
-                if (calls[client_id].mediaOut && calls[client_id].mediaOut.video && calls[client_id].mediaOut.video.parameters) {
-                    subInfo.media.video.parameters = calls[client_id].mediaOut.video.parameters;
+                if (call.mediaOut && call.mediaOut.video && call.mediaOut.video.parameters) {
+                    subInfo.media.video.parameters = call.mediaOut.video.parameters;
                 } else {
                     //check resolution
                     var fmtp = info.videoResolution,
                         preferred_resolution,
-                        optional_resolutions = calls[client_id].videoSource.media.video.optional.parameters.resolution;
+                        optional_resolutions = call.videoSource.media.video.optional.parameters.resolution;
 
                     const isResolutionEqual = (r1, r2) => {return r1.width === r2.width && r1.height === r2.height;};
                     //TODO: currently we only check CIF/QCIF, there might be other options in fmtp from other devices.
@@ -374,13 +389,13 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
                 }
             }
             //TODO: The subscriptions binding should be done in the success callback.
-            calls[client_id].subscription_id = subscription_id;
+            call.subscription_id = subscription_id;
             subscriptions[subscription_id] = {type: 'sip',
                                         audio: undefined,
                                         video: undefined,
-                                        connection: calls[client_id].conn};
+                                        connection: call.conn};
 
-            subscribed = do_subscribe(calls[client_id].conference_controller,
+            subscribed = do_subscribe(call.conference_controller,
                                       client_id,
                                       subscription_id,
                                       subInfo);
@@ -388,18 +403,18 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
         return Promise.all([published, subscribed]).then(function(result) {
             log.debug('setup call ok:', info);
-            if (calls[client_id]) {
+            if (call) {
                 // keep the current info
-                calls[client_id].currentInfo = info;
+                call.currentInfo = info;
             }
             return info;
         }).catch((err) => {
           log.warn('Call denied...');
-          if (calls[client_id]) {
-              gateway.hangup(calls[client_id].peerURI);
+          if (call) {
+              gateway.hangup(call.peerURI);
               teardownCall(client_id);
-              calls[client_id].conn && calls[client_id].conn.close();
-              do_leave(calls[client_id].conference_controller, client_id);
+              call.conn && call.conn.close();
+              do_leave(call.conference_controller, client_id);
               delete calls[client_id];
           }
         });
@@ -407,61 +422,67 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     var teardownCall = function (client_id) {
         log.debug("teardownCall, client_id: ", client_id);
-        var subscription_id = calls[client_id].subscription_id;
-        if (subscriptions[subscription_id]) {
-            var audio_from = subscriptions[subscription_id].audio,
-                video_from = subscriptions[subscription_id].video;
+        var call;
+        if (!client_id || (call = calls[client_id]) === undefined) {
+            log.warn('teardownCall ' + client_id + ' not established, ignore it');
+            return;
+        }
 
-            if (streams[audio_from]) {
-                var dest = subscriptions[subscription_id].connection.receiver('audio');
-                streams[audio_from].connection.removeDestination('audio', dest);
-                subscriptions[subscription_id].audio = undefined;
+        var subscription_id = call.subscription_id;
+        var subscription = subscriptions[subscription_id];
+        if (subscription) {
+            if (streams[subscription.audio]) {
+                var dest = subscription.connection.receiver('audio');
+                streams[subscription.audio].connection.removeDestination('audio', dest);
+                subscription.audio = undefined;
             }
 
-            if (streams[video_from]) {
-                var dest = subscriptions[subscription_id].connection.receiver('video');
-                streams[video_from].connection.removeDestination('video', dest);
-                subscriptions[subscription_id].video = undefined;
+            if (streams[subscription.video]) {
+                var dest = subscription.connection.receiver('video');
+                streams[subscription.video].connection.removeDestination('video', dest);
+                subscription.video = undefined;
             }
 
             delete subscriptions[subscription_id];
         }
 
-        var stream_id = calls[client_id].stream_id;
-        if (stream_id && streams[stream_id]) {
+        var stream_id = call.stream_id;
+        var stream;
+        if (stream_id && (stream = streams[stream_id])) {
             for (var subscription_id in subscriptions) {
-                if (subscriptions[subscription_id].audio === stream_id) {
-                    log.debug('remove audio:', subscriptions[subscription_id].audio);
-                    var dest = subscriptions[subscription_id].connection.receiver('audio');
-                    log.debug('remove audio removeDestination: ', streams[stream_id].connection, ' dest: ', dest);
-                    streams[stream_id].connection.removeDestination('audio', dest);
-                    subscriptions[subscription_id].audio = undefined;
+                var subscription = subscriptions[subscription_id];
+                if (subscription.audio === stream_id) {
+                    log.debug('remove audio:', subscription.audio);
+                    var dest = subscription.connection.receiver('audio');
+                    log.debug('remove audio removeDestination: ', stream.connection, ' dest: ', dest);
+                    stream.connection.removeDestination('audio', dest);
+                    subscription.audio = undefined;
                 }
 
-                if (subscriptions[subscription_id].video === stream_id) {
-                    log.debug('remove video:', subscriptions[subscription_id].video);
-                    var dest = subscriptions[subscription_id].connection.receiver('video');
-                    log.debug('remove video removeDestination: ', streams[stream_id].connection, ' dest: ', dest);
-                    streams[stream_id].connection.removeDestination('video', dest);
-                    subscriptions[subscription_id].video = undefined;
+                if (subscription.video === stream_id) {
+                    log.debug('remove video:', subscription.video);
+                    var dest = subscription.connection.receiver('video');
+                    log.debug('remove video removeDestination: ', stream.connection, ' dest: ', dest);
+                    stream.connection.removeDestination('video', dest);
+                    subscription.video = undefined;
                 }
 
-                if (subscriptions[subscription_id].audio === undefined && subscriptions[subscription_id].video === undefined) {
-                    subscriptions[subscription_id].type === 'internal' && internalConnFactory.destroy(subscription_id, 'out');
+                if (subscription.audio === undefined && subscription.video === undefined) {
+                    subscription.type === 'internal' && internalConnFactory.destroy(subscription_id, 'out');
                     delete subscriptions[subscription_id];
                 }
             }
             delete streams[stream_id];
-            calls[client_id].stream_id = undefined;
+            call.stream_id = undefined;
         }
     };
 
     var notifyMediaUpdate = (peerURI, direction, mediaUpdate) => {
         log.debug('notifyMediaUpdate:', peerURI, 'direction:', direction, 'mediaUpdate:', mediaUpdate);
-        var clientId = getClientId(peerURI);
-        if (calls[clientId]) {
-            if (direction === 'in' && calls[clientId].stream_id) {
-                rpcClient.remoteCast(calls[clientId].conference_controller, 'onMediaUpdate', [calls[clientId].stream_id, direction, JSON.parse(mediaUpdate)]);
+        var call = getCall(peerURI);
+        if (call) {
+            if (direction === 'in' && call.stream_id) {
+                rpcClient.remoteCast(call.conference_controller, 'onMediaUpdate', [call.stream_id, direction, JSON.parse(mediaUpdate)]);
             }
         }
     };
@@ -491,17 +512,18 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
         log.debug('CallUpdated:', info, calls);
 
         var client_id = getClientId(info.peerURI);
+        var call;
         var support_red = info.video? info.support_red : false;
         var support_ulpfec = info.video? info.support_ulpfec : false;
 
-        if(!client_id || calls[client_id] === undefined || calls[client_id].conference_controller === undefined || calls[client_id].currentInfo === undefined) {
+        if (!client_id || (call = calls[client_id]) === undefined || call.conference_controller === undefined || call.currentInfo === undefined) {
             log.warn('Call ' + client_id + ' not established, ignore it');
             return;
         }
 
-        if (calls[client_id].updating) {
+        if (call.updating) {
             log.warn("Too frequent call update request, process it later");
-            calls[client_id].latestInfo = info;
+            call.latestInfo = info;
             return;
         }
 
@@ -521,16 +543,16 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
         };
 
         // Ignore duplicate update requests
-        if (infoEqual(calls[client_id].currentInfo, info)) {
+        if (infoEqual(call.currentInfo, info)) {
             log.warn('Same as current info:', info, 'ignore it.');
             return;
         }
 
-        calls[client_id].updating = true;
+        call.updating = true;
 
-        var conference_controller = calls[client_id].conference_controller;
-        var old_stream_id = calls[client_id].stream_id;
-        var old_subscription_id = calls[client_id].subscription_id;
+        var conference_controller = call.conference_controller;
+        var old_stream_id = call.stream_id;
+        var old_subscription_id = call.subscription_id;
 
         // Ignore unpublish/unsubscribe failure for send-only/receive-only clients
         var unpublished = do_unpublish(conference_controller, client_id, old_stream_id)
@@ -552,20 +574,20 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
             teardownCall(client_id);
             // recreate a sip call connection
-            calls[client_id].conn && calls[client_id].conn.close();
-            calls[client_id].conn = new SipCallConnection({gateway: gateway, peerURI: calls[client_id].peerURI, audio : info.audio, video : info.video,
+            call.conn && call.conn.close();
+            call.conn = new SipCallConnection({gateway: gateway, peerURI: call.peerURI, audio : info.audio, video : info.video,
                 red : support_red, ulpfec : support_ulpfec}, notifyMediaUpdate);
             return setupCall(client_id, info);
         })
         .then(function(result) {
             log.debug('handleCallUpdated re-setup call ok');
-            calls[client_id].updating = undefined;
+            call.updating = undefined;
 
-            if (calls[client_id].latestInfo) {
+            if (call.latestInfo) {
                 // Process saved latest update request
                 log.debug('Received call update request during updating');
-                var latestInfo = calls[client_id].latestInfo;
-                calls[client_id].latestInfo = undefined;
+                var latestInfo = call.latestInfo;
+                call.latestInfo = undefined;
 
                 handleCallUpdated(latestInfo);
             }
@@ -576,12 +598,13 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     var handleCallClosed = function (peerURI) {
         var client_id = getClientId(peerURI);
+        var call;
 
         log.debug('CallClosed:', client_id);
-        if (client_id && calls[client_id]) {
+        if (client_id && (call = calls[client_id])) {
             teardownCall(client_id);
-            calls[client_id].conn && calls[client_id].conn.close();
-            do_leave(calls[client_id].conference_controller, client_id);
+            call.conn && call.conn.close();
+            do_leave(call.conference_controller, client_id);
             delete calls[client_id];
         }
     };
@@ -688,11 +711,12 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
         recycling_mode = true;
         for (var client_id in calls) {
+            var call = calls[client_id];
             log.debug('force leaving room ', room_id, ' user: ', client_id);
-            gateway.hangup(calls[client_id].peerURI);
+            gateway.hangup(call.peerURI);
             teardownCall(client_id);
-            calls[client_id].conn && calls[client_id].conn.close();
-            do_leave(calls[client_id].conference_controller, client_id);
+            call.conn && call.conn.close();
+            do_leave(call.conference_controller, client_id);
             delete calls[client_id];
         }
         gateway.close();
@@ -735,23 +759,24 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
     };
 
     that.unpublish = function (stream_id, callback) {
-        log.debug('unpublish enter, stream_id:', stream_id);
-        if (streams[stream_id]) {
+        log.debug('unpublish stream_id:', stream_id);
+        var stream = streams[stream_id];
+        if (stream) {
             for (var subscription_id in subscriptions) {
-                if (subscriptions[subscription_id].audio === stream_id) {
-                    log.debug('remove audio:', subscriptions[subscription_id].audio);
-                    var dest = subscriptions[subscription_id].connection.receiver('audio');
-                    log.debug('remove audio removeDestination: ', streams[stream_id].connection, ' dest: ', dest);
-                    streams[stream_id].connection.removeDestination('audio', dest);
-                    subscriptions[subscription_id].audio = undefined;
+                var subscription = subscriptions[subscription_id];
+                if (subscription.audio === stream_id) {
+                    log.debug('remove audio:', subscription.audio);
+                    var dest = subscription.connection.receiver('audio');
+                    log.debug('remove audio destination: ', stream.connection, ' dest: ', dest);
+                    stream.connection.removeDestination('audio', dest);
+                    subscription.audio = undefined;
                 }
-
-                if (subscriptions[subscription_id].video === stream_id) {
-                    log.debug('remove video:', subscriptions[subscription_id].video);
-                    var dest = subscriptions[subscription_id].connection.receiver('video');
-                    log.debug('remove video removeDestination: ', streams[stream_id].connection, ' dest: ', dest);
-                    streams[stream_id].connection.removeDestination('video', dest);
-                    subscriptions[subscription_id].video = undefined;
+                if (subscription.video === stream_id) {
+                    log.debug('remove video:', subscription.video);
+                    var dest = subscription.connection.receiver('video');
+                    log.debug('remove video destination: ', stream.connection, ' dest: ', dest);
+                    stream.connection.removeDestination('video', dest);
+                    subscription.video = undefined;
                 }
             }
 
@@ -793,19 +818,18 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
     that.unsubscribe = function (subscription_id, callback) {
         log.debug('unsubscribe, subscription_id:', subscription_id);
 
-        if (subscriptions[subscription_id] !== undefined) {
-            if (subscriptions[subscription_id].audio
-                && streams[subscriptions[subscription_id].audio]) {
-                var dest = subscriptions[subscription_id].connection.receiver('audio');
-                log.debug("connection: ", streams[subscriptions[subscription_id].audio].connection, ' remove Dest: ', dest);
-                streams[subscriptions[subscription_id].audio].connection.removeDestination('audio', dest);
+        var subscription = subscriptions[subscription_id];
+        if (subscription !== undefined) {
+            if (subscription.audio && streams[subscription.audio]) {
+                var dest = subscription.connection.receiver('audio');
+                log.debug("connection: ", streams[subscription.audio].connection, ' remove dest: ', dest);
+                streams[subscription.audio].connection.removeDestination('audio', dest);
             }
 
-            if (subscriptions[subscription_id].video
-                && streams[subscriptions[subscription_id].video]) {
-                var dest = subscriptions[subscription_id].connection.receiver('video');
-                log.debug("connection: ", streams[subscriptions[subscription_id].video].connection, ' remove Dest: ', dest);
-                streams[subscriptions[subscription_id].video].connection.removeDestination('video', dest);
+            if (subscription.video && streams[subscription.video]) {
+                var dest = subscription.connection.receiver('video');
+                log.debug("connection: ", streams[subscription.video].connection, ' remove dest: ', dest);
+                streams[subscription.video].connection.removeDestination('video', dest);
             }
 
             // All subscribed connections are internal
@@ -831,27 +855,28 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
             return callback('callback', {type: 'failed', reason: 'Video stream does not exist:' + videoFrom});
         }
 
-        var conn = subscriptions[connectionId] && subscriptions[connectionId].connection;
+        var subscription = subscriptions[connectionId];
+        var conn = subscription && subscription.connection;
 
         if (!conn) {
             log.error('connectionId not valid:', connectionId);
             return callback('callback', {type: 'failed', reason: 'connectionId not valid:' + connectionId});
         }
 
-        var is_sip = (subscriptions[connectionId].type === 'sip');
+        var is_sip = (subscription.type === 'sip');
 
         if (audioFrom) {
             var dest = conn.receiver('audio');
             log.debug("subscribe addDestination: ", streams[audioFrom].connection, " dest: ", dest);
             streams[audioFrom].connection.addDestination('audio', dest);
-            subscriptions[connectionId].audio = audioFrom;
+            subscription.audio = audioFrom;
         }
 
         if (videoFrom) {
             var dest = conn.receiver('video');
             streams[videoFrom].connection.addDestination('video', dest);
             if (streams[videoFrom].type === 'sip') {streams[videoFrom].connection.requestKeyFrame();}//FIXME: Temporarily add this interface to workround the hardware mode's absence of feedback mechanism.
-            subscriptions[connectionId].video = videoFrom;
+            subscription.video = videoFrom;
         }
 
         callback('callback', 'ok');
@@ -859,22 +884,22 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     that.cutoff = function (connectionId, callback) {
         log.debug('cutoff, connectionId:', connectionId);
-        if (subscriptions[connectionId]) {
-            var is_sip = (subscriptions[connectionId].type === 'sip');
-            if (subscriptions[connectionId].audio
-                && streams[subscriptions[connectionId].audio]) {
-                var dest = subscriptions[connectionId].connection.receiver('audio');
-                log.debug("connection: ", streams[subscriptions[connectionId].audio].connection, ' remove audio Dest: ', dest);
-                streams[subscriptions[connectionId].audio].connection.removeDestination('audio', dest);
-                subscriptions[connectionId].audio = undefined;
+
+        var subscription = subscriptions[connectionId];
+        if (subscription) {
+            var is_sip = (subscription.type === 'sip');
+            if (subscription.audio && streams[subscription.audio]) {
+                var dest = subscription.connection.receiver('audio');
+                log.debug("connection: ", streams[subscription.audio].connection, ' remove audio dest: ', dest);
+                streams[subscription.audio].connection.removeDestination('audio', dest);
+                subscription.audio = undefined;
             }
 
-            if (subscriptions[connectionId].video
-                && streams[subscriptions[connectionId].video]) {
-                var dest = subscriptions[connectionId].connection.receiver('video');
-                log.debug("connection: ", streams[subscriptions[connectionId].video].connection, ' remove video Dest: ', dest);
-                streams[subscriptions[connectionId].video].connection.removeDestination('video', dest);
-                subscriptions[connectionId].video = undefined;
+            if (subscription.video && streams[subscription.video]) {
+                var dest = subscription.connection.receiver('video');
+                log.debug("connection: ", streams[subscription.video].connection, ' remove video dest: ', dest);
+                streams[subscription.video].connection.removeDestination('video', dest);
+                subscription.video = undefined;
             }
             callback('callback', 'ok');
         } else {
@@ -885,10 +910,11 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     that.drop = function(clientId, fromRoom) {
         log.debug('drop, clientId:', clientId, 'fromRoom:', fromRoom);
-        if (calls[clientId]) {
-            gateway.hangup(calls[clientId].peerURI);
+        var call = calls[clientId];
+        if (call) {
+            gateway.hangup(call.peerURI);
             teardownCall(clientId);
-            calls[clientId].conn && calls[clientId].conn.close();
+            call.conn && call.conn.close();
             delete calls[clientId];
         }
     };
@@ -918,18 +944,19 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
         if (!recycling_mode) {
             var client_id = 'SipOut' + Math.round(Math.random() * 1000000000000);
             if (gateway.makeCall(peerURI, !!mediaIn.audio, !!mediaIn.video)) {
-                calls[client_id] = {conference_controller: controller, peerURI: peerURI};
+                var call = {conference_controller: controller, peerURI: peerURI};
+                calls[client_id] = call;
                 do_join(controller, client_id, peerURI, room_id, erizo.id, function(streamList) {
                     for(var index in streamList){
                         if (mediaOut.audio && mediaOut.audio.from && mediaOut.audio.from === streamList[index].id) {
-                            calls[client_id].audioSource = streamList[index];
+                            call.audioSource = streamList[index];
                         }
                         if (mediaOut.video && mediaOut.video.from && mediaOut.video.from === streamList[index].id) {
-                            calls[client_id].videoSource = streamList[index];
-                            calls[client_id].mediaOut = mediaOut;
+                            call.videoSource = streamList[index];
+                            call.mediaOut = mediaOut;
                         }
                     }
-                    if (calls[client_id].audioSource || calls[client_id].videoSource) {
+                    if (call.audioSource || call.videoSource) {
                         callback('callback', client_id);
                     } else {
                         do_leave(controller, client_id);
@@ -951,12 +978,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     that.endCall = function(clientId, callback) {
         log.debug('endCall, clientId:', clientId);
-        if (calls[clientId]) {
-            gateway.hangup(calls[clientId].peerURI);
-            teardownCall(clientId);
-            calls[clientId].conn && calls[clientId].conn.close();
-            delete calls[clientId];
-        }
+        this.drop(clientId, room_id);
         callback('callback', 'ok');
     };
 
@@ -974,13 +996,12 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
     that.onFaultDetected = function (message) {
         if (message.purpose === 'conference') {
             for (var client_id in calls) {
-                if (calls[client_id].conference_controller &&
-                    ((message.type === 'node' && message.id === calls[client_id].conference_controller) || (message.type === 'worker' && calls[client_id].conference_controller.startsWith(message.id)))){
+                var call = calls[client_id];
+                if (call.conference_controller &&
+                    ((message.type === 'node' && message.id === call.conference_controller) ||
+                     (message.type === 'worker' && call.conference_controller.startsWith(message.id)))) {
                     log.error('Fault detected on conference_controller:', message.id, 'of call:', client_id , ', terminate it');
-                    gateway.hangup(calls[client_id].peerURI);
-                    teardownCall(client_id);
-                    calls[client_id].conn && calls[client_id].conn.close();
-                    delete calls[client_id];
+                    this.drop(client_id, room_id);
                 }
             }
         }

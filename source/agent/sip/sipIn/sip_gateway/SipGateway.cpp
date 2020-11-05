@@ -36,7 +36,7 @@ bool SipGateway::sipRegister(const std::string& sipServerAddr, const std::string
 // The main thread
 bool SipGateway::makeCall(const std::string& calleeURI, bool requireAudio, bool requireVideo)
 {
-    if (m_sipEP->makeCall(calleeURI,requireAudio, requireVideo)) {
+    if (m_sipEP->makeCall(calleeURI, requireAudio, requireVideo)) {
         std::string peerURI = (strncmp(calleeURI.c_str(), "sip:", 4) ? "sip:" + calleeURI : calleeURI);
         ELOG_DEBUG("makeCall CallInfo: %s", peerURI.c_str());
         insertCallInfoByPeerURI(peerURI, requireAudio, requireVideo);
@@ -205,7 +205,7 @@ void SipGateway::insertCallInfoByPeerURI(const std::string& uri, const bool audi
 
 void SipGateway::insertOrUpdateCallInfoByPeerURI(const std::string& uri, const std::string& vCodec, unsigned int rtpClock, const std::string& fmtp)
 {
-    ELOG_DEBUG("insertOrUpdateCallInfoByPeerURI %s", uri.c_str());
+    ELOG_DEBUG("insertOrUpdateCallInfoByPeerURI %s for video", uri.c_str());
     boost::upgrade_lock<boost::shared_mutex> upgrade_lock(m_mutex);
     std::map<std::string, CallInfo>::iterator iter = m_call_map.find(uri);
     boost::upgrade_to_unique_lock<boost::shared_mutex> unique_lock(upgrade_lock);
@@ -225,7 +225,7 @@ void SipGateway::insertOrUpdateCallInfoByPeerURI(const std::string& uri, const s
 
 void SipGateway::insertOrUpdateCallInfoByPeerURI(const std::string& uri, const std::string& aCodec, unsigned int sampleRate)
 {
-    ELOG_DEBUG("insertOrUpdateCallInfoByPeerURI %s", uri.c_str());
+    ELOG_DEBUG("insertOrUpdateCallInfoByPeerURI %s for audio", uri.c_str());
     boost::upgrade_lock<boost::shared_mutex> upgrade_lock(m_mutex);
     std::map<std::string, CallInfo>::iterator iter = m_call_map.find(uri);
     boost::upgrade_to_unique_lock<boost::shared_mutex> unique_lock(upgrade_lock);
@@ -243,7 +243,7 @@ void SipGateway::insertOrUpdateCallInfoByPeerURI(const std::string& uri, const s
 
 void SipGateway::insertOrUpdateCallInfoByPeerURI(const std::string& uri, void *call, bool audio, bool video)
 {
-    ELOG_DEBUG("insertOrUpdateCallInfoByPeerURI %s", uri.c_str());
+    ELOG_DEBUG("insertOrUpdateCallInfoByPeerURI %s for av", uri.c_str());
     boost::upgrade_lock<boost::shared_mutex> upgrade_lock(m_mutex);
     std::map<std::string, CallInfo>::iterator iter = m_call_map.find(uri);
     boost::upgrade_to_unique_lock<boost::shared_mutex> unique_lock(upgrade_lock);
