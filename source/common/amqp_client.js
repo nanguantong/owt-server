@@ -46,17 +46,18 @@ var rpcClient = function(bus, conn, on_ready, on_failure) {
                     try {
                         log.debug('New message received', message);
 
-                        if(call_map[message.corrID] !== undefined) {
+                        var call = call_map[message.corrID];
+                        if(call !== undefined) {
                             log.debug('Callback', message.type, ' - ', message.data);
-                            clearTimeout(call_map[message.corrID].timer);
-                            call_map[message.corrID].fn[message.type].call({}, message.data, message.err);
-                            if (call_map[message.corrID].fn['onStatus']) {
+                            clearTimeout(call.timer);
+                            call.fn[message.type].call({}, message.data, message.err);
+                            if (call.fn['onStatus']) {
                             //FIXME: if the rpc contains a 'onStatus' callback, it will not be deleted immediately, but wait for a time span of REMOVAL_TIMEOUT then delete, which will lead to the issue that the status update would not be observed by the caller thereafter.
                                 setTimeout(function() {
-                                    (call_map[message.corrID] !== undefined) &&  (delete call_map[message.corrID]);
+                                    delete call_map[message.corrID];
                                 }, REMOVAL_TIMEOUT);
                             } else {
-                                (call_map[message.corrID] !== undefined) && (delete call_map[message.corrID]);
+                                delete call_map[message.corrID];
                             }
                         } else {
                           log.warn('Late rpc reply:', message);
@@ -75,13 +76,14 @@ var rpcClient = function(bus, conn, on_ready, on_failure) {
         log.debug('remoteCall, corrID:', corrID, 'to:', to, 'method:', method);
         if (ready) {
             var corr_id = corrID++;
-            call_map[corr_id] = {};
-            call_map[corr_id].fn = callbacks || {callback: function() {}};
-            call_map[corr_id].timer = setTimeout(function() {
+            var call = {};
+            call_map[corr_id] = call;
+            call.fn = callbacks || {callback: function() {}};
+            call.timer = setTimeout(function() {
                 log.debug('remoteCall timeout, corrID:', corr_id);
-                if (call_map[corr_id]) {
-                    for (var i in call_map[corr_id].fn) {
-                        (typeof call_map[corr_id].fn[i] === 'function' ) && call_map[corr_id].fn[i]('timeout');
+                if (call) {
+                    for (var i in call.fn) {
+                        (typeof call.fn[i] === 'function' ) && call.fn[i]('timeout');
                     }
                     delete call_map[corr_id];
                 }

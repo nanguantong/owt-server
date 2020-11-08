@@ -511,8 +511,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
     var handleCallUpdated = function (info) {
         log.debug('CallUpdated:', info, calls);
 
-        var client_id = getClientId(info.peerURI);
-        var call;
+        var client_id = getClientId(info.peerURI), call;
         var support_red = info.video? info.support_red : false;
         var support_ulpfec = info.video? info.support_ulpfec : false;
 
@@ -597,8 +596,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
     };
 
     var handleCallClosed = function (peerURI) {
-        var client_id = getClientId(peerURI);
-        var call;
+        var client_id = getClientId(peerURI), call;
 
         log.debug('CallClosed:', client_id);
         if (client_id && (call = calls[client_id])) {
@@ -817,7 +815,6 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
     that.unsubscribe = function (subscription_id, callback) {
         log.debug('unsubscribe, subscription_id:', subscription_id);
-
         var subscription = subscriptions[subscription_id];
         if (subscription !== undefined) {
             if (subscription.audio && streams[subscription.audio]) {
@@ -948,11 +945,12 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
                 calls[client_id] = call;
                 do_join(controller, client_id, peerURI, room_id, erizo.id, function(streamList) {
                     for(var index in streamList){
-                        if (mediaOut.audio && mediaOut.audio.from && mediaOut.audio.from === streamList[index].id) {
-                            call.audioSource = streamList[index];
+                        var stream = streamList[index];
+                        if (mediaOut.audio && mediaOut.audio.from && mediaOut.audio.from === stream.id) {
+                            call.audioSource = stream;
                         }
-                        if (mediaOut.video && mediaOut.video.from && mediaOut.video.from === streamList[index].id) {
-                            call.videoSource = streamList[index];
+                        if (mediaOut.video && mediaOut.video.from && mediaOut.video.from === stream.id) {
+                            call.videoSource = stream;
                             call.mediaOut = mediaOut;
                         }
                     }
