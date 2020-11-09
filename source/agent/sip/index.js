@@ -290,36 +290,31 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
     //TODO: should complete the following procedure to protect against the unexpected situations such as partial failure.
     var setupCall = function (client_id, info) {
         var call = calls[client_id];
-        var conference_controller = call.conference_controller;
 
         var published = Promise.resolve('ok');
         var subscribed = Promise.resolve('ok');
         var audio_info, video_info;
 
         if (info.audio) {
-            var tmp;
             if (info.audio_codec === 'opus') {
-               tmp = {codec: 'opus', sampleRate: 48000, channelNum: 2};
+                audio_info = {codec: 'opus', sampleRate: 48000, channelNum: 2};
             } else if (info.audio_codec === 'PCMU') {
-               tmp = {codec: 'pcmu'};
+                audio_info = {codec: 'pcmu'};
             } else if (info.audio_codec === 'PCMA') {
-               tmp = {codec: 'pcma'};
+                audio_info = {codec: 'pcma'};
             }
-            audio_info = tmp;
         }
         if (info.video) {
             //TODO: device:camera, we may need to differentiate with screen sharing in the furture
             var codec = info.video_codec.toLowerCase();
-            var tmp;
             if (codec === 'h264') {
               var pos = info.videoResolution.indexOf('profile-level-id=');
               var plid = info.videoResolution.substr(pos + 'profile-level-id='.length, 6);
               var prf = translateProfile(plid) || 'CB';
-              tmp = {codec: 'h264', profile: prf, resolution: {width: 0, height: 0}, framerate: 0};
+              video_info = {codec: 'h264', profile: prf, resolution: {width: 0, height: 0}, framerate: 0};
             } else {
-              tmp = {codec: codec, resolution: {width: 0, height: 0}, framerate: 0};
+              video_info = {codec: codec, resolution: {width: 0, height: 0}, framerate: 0};
             }
-            video_info = tmp;
         }
 
         // publish stream to controller
