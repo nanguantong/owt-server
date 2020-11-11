@@ -50,9 +50,9 @@ protected:
 #ifdef ENABLE_MSDK
     boost::shared_ptr<owt_base::MsdkFrame> getMsdkFrame(const uint32_t width, const uint32_t height);
 
-    void SendFrame(boost::shared_ptr<owt_base::MsdkFrame> msdkFrame, uint32_t timeStamp);
+    void sendFrame(boost::shared_ptr<owt_base::MsdkFrame> msdkFrame, uint32_t timeStamp);
 #endif
-    void SendFrame(rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer, uint32_t timeStamp);
+    void sendFrame(rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer, uint32_t timeStamp);
 
 private:
     uint32_t m_lastWidth;

@@ -42,7 +42,7 @@ public:
 
 protected:
     bool filterFrame(const Frame& frame);
-    void SendFrame(rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer, uint32_t timeStamp);
+    void sendFrame(rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer, uint32_t timeStamp);
 
 private:
     uint32_t m_lastWidth;
