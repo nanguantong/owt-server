@@ -544,12 +544,12 @@ int ua_alloc(struct ua **uap, const char *aor, struct uag *uag)
 
 	if (ua->acc->menc) {
 		ua_printf(ua, "Using media encryption `%s'\n",
-			ua->acc->menc->id);
+			  ua->acc->menc->id);
 	}
 
 	/* Register clients */
 	if (uag->cfg && str_isset(uag->cfg->uuid))
-		add_extension(ua, "gruu");
+	        add_extension(ua, "gruu");
 
 	if (ua->acc->regint) {
 		err = reg_add(&ua->regl, ua, 0);
