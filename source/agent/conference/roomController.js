@@ -554,7 +554,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
                 log.debug('internally linkup ok');
                 var i = stream.spread.findIndex((s) => {return s.target === target_node;});
                 if (i >= 0) {
-                    stream.spread[i].status = 'connected';
+                  stream.spread[i].status = 'connected';
                   process.nextTick(() => {
                     stream.spread[i].waiting.forEach((e) => {
                       e.onOK();
@@ -577,9 +577,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
     var shrinkStream = function (stream_id, target_node) {
         log.debug('shrinkStream, stream_id:', stream_id, 'target_node:', target_node);
-        var stream = streams[stream_id];
-        var terminal = terminals[stream.owner];
-        if (stream && terminal) {
+        var stream = streams[stream_id], terminal;
+        if (stream && (terminal = terminals[stream.owner])) {
             var original_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node;
 
@@ -630,9 +629,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var mixAudio = function (stream_id, view, on_ok, on_error) {
         log.debug('to mix audio of stream:', stream_id, 'mixed view:', view);
         var audio_mixer = getSubMediaMixer(view, 'audio');
-        var stream = streams[stream_id];
-        var terminal = terminals[audio_mixer];
-        if (stream && audio_mixer && terminal) {
+        var stream = streams[stream_id], terminal;
+        if (stream && audio_mixer && (terminal = terminals[audio_mixer])) {
             var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node;
             spreadStream(stream_id, target_node, 'amixer', function() {
@@ -663,9 +661,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var unmixAudio = function (stream_id, view) {
         log.debug('to unmix audio of view:', view);
         var audio_mixer = getSubMediaMixer(view, 'audio');
-        var stream = streams[stream_id];
-        var terminal = terminals[audio_mixer];
-        if (stream && stream.audio && audio_mixer && terminal) {
+        var stream = streams[stream_id], terminal;
+        if (stream && stream.audio && audio_mixer && (terminal = terminals[audio_mixer])) {
             var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node,
                 i = stream.audio.subscribers.indexOf(audio_mixer);
@@ -680,9 +677,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var mixVideo = function (stream_id, view, on_ok, on_error) {
         log.debug('to mix video of stream:', stream_id);
         var video_mixer = getSubMediaMixer(view, 'video');
-        var stream = streams[stream_id];
-        var terminal = terminals[video_mixer];
-        if (stream && video_mixer && terminal) {
+        var stream = streams[stream_id], terminal;
+        if (stream && video_mixer && (terminal = terminals[video_mixer])) {
             var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node;
             spreadStream(stream_id, target_node, 'vmixer', function() {
@@ -713,9 +709,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     var unmixVideo = function (stream_id, view) {
         log.debug('to unmix video of stream:', stream_id);
         var video_mixer = getSubMediaMixer(view, 'video');
-        var stream = streams[stream_id];
-        var terminal = terminals[video_mixer];
-        if (stream && stream.video && video_mixer && terminal) {
+        var stream = streams[stream_id], terminal;
+        if (stream && stream.video && video_mixer && (terminal = terminals[video_mixer])) {
             var target_node = terminal.locality.node,
                 spread_id = stream_id + '@' + target_node,
                 i = stream.video.subscribers.indexOf(video_mixer);
@@ -732,7 +727,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         var stream = streams[stream_id];
         if (!stream) {
             log.error('no stream:', stream_id, 'view:', view);
-        } if (stream.audio) {
+        } else if (stream.audio) {
             mixAudio(stream_id, view, function () {
                 if (stream.video && getSubMediaMixer(view, 'video')) {
                     mixVideo(stream_id, view, on_ok, function (error_reason) {
@@ -932,10 +927,11 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
             var axcoder = randomId();
             var stream = streams[stream_id];
             newTerminal(axcoder, 'axcoder', stream.owner, false, terminals[stream.owner].origin, function () {
+                var ax_terminal = terminals[axcoder];
                 var on_failed = function (reason) {
                     makeRPC(
                         rpcClient,
-                        terminals[axcoder].locality.node,
+                        ax_terminal.locality.node,
                         'deinit',
                         [axcoder]);
                     deleteTerminal(axcoder);
@@ -944,15 +940,16 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
                 makeRPC(
                     rpcClient,
-                    terminals[axcoder].locality.node,
+                    ax_terminal.locality.node,
                     'init',
                     ['transcoding', {}, stream_id, selfRpcId, 'transcoder'],
                     function (supported_audio) {
-                        var target_node = terminals[axcoder].locality.node,
+                        var target_node = ax_terminal.locality.node,
                             spread_id = stream_id + '@' + target_node;
                         spreadStream(stream_id, target_node, 'axcoder', function () {
-                            if (terminals[axcoder]) {
-                                terminals[axcoder].subscribed[spread_id] = {audio: stream_id};
+                            ax_terminal = terminals[axcoder];
+                            if (ax_terminal) {
+                                ax_terminal.subscribed[spread_id] = {audio: stream_id};
                                 stream.audio.subscribers.push(axcoder);
                                 on_ok(axcoder);
                             } else {
@@ -1046,12 +1043,12 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         findExistingVideoTranscoder(stream_id, on_ok, function () {
             var vxcoder = randomId();
             var stream = streams[stream_id];
-            var terminalId = stream.owner;
-            newTerminal(vxcoder, 'vxcoder', stream.owner, false, terminals[terminalId].origin, function () {
+            newTerminal(vxcoder, 'vxcoder', stream.owner, false, terminals[stream.owner].origin, function () {
+                var vx_terminal = terminals[vxcoder];
                 var on_failed = function (error_reason) {
                     makeRPC(
                         rpcClient,
-                        terminals[vxcoder].locality.node,
+                        vx_terminal.locality.node,
                         'deinit',
                         [vxcoder]);
                     deleteTerminal(vxcoder);
@@ -1060,15 +1057,16 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
 
                 makeRPC(
                     rpcClient,
-                    terminals[vxcoder].locality.node,
+                    vx_terminal.locality.node,
                     'init',
                     ['transcoding', {motionFactor: 1.0}, stream_id, selfRpcId, 'transcoder'],
                     function (supported_video) {
-                        var target_node = terminals[vxcoder].locality.node,
+                        var target_node = vx_terminal.locality.node,
                             spread_id = stream_id + '@' + target_node;
                         spreadStream(stream_id, target_node, 'vxcoder', function () {
-                            if (terminals[vxcoder]) {
-                                terminals[vxcoder].subscribed[spread_id] = {video: stream_id};
+                            vx_terminal = terminals[vxcoder];
+                            if (vx_terminal) {
+                                vx_terminal.subscribed[spread_id] = {video: stream_id};
                                 stream.video.subscribers.push(vxcoder);
                                 on_ok(vxcoder);
                             } else {
@@ -1093,7 +1091,8 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
         log.debug('terminateTemporaryStream:', stream_id);
         var stream = streams[stream_id];
         var owner = stream.owner;
-        var node = terminals[owner].locality.node;
+        var terminal = terminals[owner];
+        var node = terminal.locality.node;
         makeRPC(
             rpcClient,
             node,
@@ -1101,11 +1100,11 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
             [stream_id]);
         delete streams[stream_id];
 
-        var i = terminals[owner].published.indexOf(stream_id);
-        i > -1 && terminals[owner].published.splice(i ,1);
+        var i = terminal.published.indexOf(stream_id);
+        i > -1 && terminal.published.splice(i, 1);
 
-        if (terminals[owner].published.length === 0 && (terminals[owner].type === 'axcoder' || terminals[owner].type === 'vxcoder')) {
-            for (var subscription_id in terminals[owner].subscribed) {
+        if (terminal.published.length === 0 && (terminal.type === 'axcoder' || terminal.type === 'vxcoder')) {
+            for (var subscription_id in terminal.subscribed) {
                 unsubscribeStream(owner, subscription_id);
             }
             deleteTerminal(owner);
@@ -1215,9 +1214,9 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
     };
 
     var simulcastVideoMatched = function (stream_id, format, resolution, framerate, bitrate, keyFrameInterval, simulcastRid) {
-        var stream = streams[stream_id];
         var matchedId;
         var videoInfo = {};
+        var stream = streams[stream_id];
         if (stream && stream.video) {
             if (simulcastRid) {
                 // Use specified simucalst RID
@@ -2455,7 +2454,7 @@ module.exports.create = function (spec, on_init_ok, on_init_failed) {
                 if (update.info && update.info.video &&
                     update.info.video.parameters &&
                     update.info.video.parameters.resolution) {
-                        stream.video.simulcast[update.rid].resolution =
+                    stream.video.simulcast[update.rid].resolution =
                         update.info.video.parameters.resolution;
                 }
                 if (!stream.close) {
