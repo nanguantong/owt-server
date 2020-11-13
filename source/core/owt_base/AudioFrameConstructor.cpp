@@ -41,6 +41,15 @@ void AudioFrameConstructor::unbindTransport()
     }
 }
 
+void AudioFrameConstructor::onFeedback(const FeedbackMsg& msg)
+{
+    if (msg.type == owt_base::AUDIO_FEEDBACK) {
+        boost::shared_lock<boost::shared_mutex> lock(m_transport_mutex);
+        if (msg.cmd == RTCP_PACKET && fb_sink_)
+            fb_sink_->deliverFeedback(std::make_shared<erizo::DataPacket>(0, msg.data.rtcp.buf, msg.data.rtcp.len, erizo::AUDIO_PACKET));
+    }
+}
+
 int AudioFrameConstructor::deliverVideoData_(std::shared_ptr<erizo::DataPacket> video_packet)
 {
     assert(false);
@@ -74,15 +83,6 @@ int AudioFrameConstructor::deliverAudioData_(std::shared_ptr<erizo::DataPacket> 
         deliverFrame(frame);
     }
     return audio_packet->length;
-}
-
-void AudioFrameConstructor::onFeedback(const FeedbackMsg& msg)
-{
-    if (msg.type == owt_base::AUDIO_FEEDBACK) {
-        boost::shared_lock<boost::shared_mutex> lock(m_transport_mutex);
-        if (msg.cmd == RTCP_PACKET && fb_sink_)
-            fb_sink_->deliverFeedback(std::make_shared<erizo::DataPacket>(0, msg.data.rtcp.buf, msg.data.rtcp.len, erizo::AUDIO_PACKET));
-    }
 }
 
 int AudioFrameConstructor::deliverEvent_(erizo::MediaEventPtr event)

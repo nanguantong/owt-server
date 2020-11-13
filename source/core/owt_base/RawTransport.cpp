@@ -370,7 +370,11 @@ void RawTransport<prot>::readPacketHandler(const boost::system::error_code& ec, 
     if (m_isClosing)
         return;
 
-    ELOG_DEBUG("Port#%d recieved data(%zu)", m_socket.tcp.acceptor->local_endpoint().port(), bytes);
+    if (m_socket.tcp.acceptor) {
+        ELOG_DEBUG("Port#%d recieved data(%zu)", m_socket.tcp.acceptor->local_endpoint().port(), bytes);
+    } else {
+        ELOG_WARN("Port closed data(%zu)", bytes);
+    }
     uint32_t expectedLen = ntohl(*(reinterpret_cast<uint32_t*>(m_readHeader)));
     if (!ec || ec == boost::asio::error::message_size) {
         switch (prot) {

@@ -190,7 +190,7 @@ void FrameProcesser::onFrame(const Frame& frame)
         }
 
         if (!m_outFrameRate) {
-            SendFrame(msdkFrame, frame.timeStamp);
+            sendFrame(msdkFrame, frame.timeStamp);
         } else {
             boost::shared_lock<boost::shared_mutex> lock(m_mutex);
             m_activeMsdkFrame = msdkFrame;
@@ -226,7 +226,7 @@ void FrameProcesser::onFrame(const Frame& frame)
 #endif
 
         if (!m_outFrameRate) {
-            SendFrame(i420Buffer, frame.timeStamp);
+            sendFrame(i420Buffer, frame.timeStamp);
         } else {
             boost::shared_lock<boost::shared_mutex> lock(m_mutex);
             m_activeI420Buffer = i420Buffer;
@@ -245,7 +245,7 @@ void FrameProcesser::onFrame(const Frame& frame)
 }
 
 #ifdef ENABLE_MSDK
-void FrameProcesser::SendFrame(boost::shared_ptr<owt_base::MsdkFrame> msdkFrame, uint32_t timeStamp)
+void FrameProcesser::sendFrame(boost::shared_ptr<owt_base::MsdkFrame> msdkFrame, uint32_t timeStamp)
 {
     owt_base::Frame outFrame;
     memset(&outFrame, 0, sizeof(outFrame));
@@ -269,7 +269,7 @@ void FrameProcesser::SendFrame(boost::shared_ptr<owt_base::MsdkFrame> msdkFrame,
 }
 #endif
 
-void FrameProcesser::SendFrame(rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer, uint32_t timeStamp)
+void FrameProcesser::sendFrame(rtc::scoped_refptr<webrtc::I420Buffer> i420Buffer, uint32_t timeStamp)
 {
     owt_base::Frame outFrame;
     memset(&outFrame, 0, sizeof(outFrame));
@@ -305,7 +305,7 @@ void FrameProcesser::clearText()
 
 void FrameProcesser::onTimeout()
 {
-    uint32_t timeStamp = kMsToRtpTimestamp * m_clock->TimeInMilliseconds();;
+    uint32_t timeStamp = kMsToRtpTimestamp * m_clock->TimeInMilliseconds();
 
 #ifdef ENABLE_MSDK
     if (m_format == FRAME_FORMAT_MSDK) {
@@ -315,7 +315,7 @@ void FrameProcesser::onTimeout()
             msdkFrame = m_activeMsdkFrame;
         }
         if (msdkFrame)
-            SendFrame(msdkFrame, timeStamp);
+            sendFrame(msdkFrame, timeStamp);
         return;
     }
 #endif
@@ -327,7 +327,7 @@ void FrameProcesser::onTimeout()
             i420Buffer = m_activeI420Buffer;
         }
         if (i420Buffer)
-            SendFrame(i420Buffer, timeStamp);
+            sendFrame(i420Buffer, timeStamp);
         return;
     }
 }

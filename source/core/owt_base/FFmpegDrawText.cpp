@@ -123,34 +123,7 @@ bool FFmpegDrawText::init(int width, int height)
     return true;
 
 end:
-    if (m_input_frame) {
-        av_frame_free(&m_input_frame);
-        m_input_frame = NULL;
-    }
-
-    if (m_filt_frame) {
-        av_frame_free(&m_filt_frame);
-        m_filt_frame = NULL;
-    }
-
-    if (m_filter_inputs) {
-        avfilter_inout_free(&m_filter_inputs);
-        m_filter_inputs = NULL;
-    }
-
-    if (m_filter_outputs) {
-        avfilter_inout_free(&m_filter_outputs);
-        m_filter_outputs = NULL;
-    }
-
-    if (m_filter_graph) {
-        avfilter_graph_free(&m_filter_graph);
-        m_filter_graph = NULL;
-    }
-
-    m_buffersrc_ctx = NULL;
-    m_buffersink_ctx = NULL;
-
+    deinit();
     return false;
 }
 
@@ -215,9 +188,11 @@ int FFmpegDrawText::setText(const std::string& arg)
 
 int FFmpegDrawText::drawFrame(Frame& frame)
 {
-    return 0;//disable
-
     int ret;
+
+    if (!m_enabled) {
+        return 1;
+    }
 
     switch (frame.format) {
         case FRAME_FORMAT_I420:
@@ -253,6 +228,7 @@ int FFmpegDrawText::drawFrame(Frame& frame)
 
         m_width = frame.additionalInfo.video.width;
         m_height = frame.additionalInfo.video.height;
+        m_reconfigured = true;
     }
 
     if (m_reconfigured) {
@@ -383,7 +359,7 @@ int FFmpegDrawText::copyFrame(Frame &dstFrame, AVFrame *srcAVFrame)
 
 char *FFmpegDrawText::ff_err2str(int errRet)
 {
-    av_strerror(errRet, (char*)(&m_errbuff), 500);
+    av_strerror(errRet, (char*)(&m_errbuff), sizeof(m_errbuff));
     return m_errbuff;
 }
 

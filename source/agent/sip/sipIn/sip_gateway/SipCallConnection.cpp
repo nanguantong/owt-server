@@ -134,7 +134,6 @@ int SipCallConnection::deliverVideoData_(std::shared_ptr<erizo::DataPacket> vide
 
 int SipCallConnection::sendFirPacket()
 {
-
     ELOG_DEBUG("sendFirPacket");
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     if (running) {

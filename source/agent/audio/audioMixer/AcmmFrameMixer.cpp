@@ -96,7 +96,7 @@ boost::shared_ptr<AcmmGroup> AcmmFrameMixer::addGroup(const std::string& group)
     if (getFreeGroupId(&id)) {
         m_groupIdMap[group] = id;
         acmmGroup.reset(new AcmmGroup(id));
-        m_groups[m_groupIdMap[group]] = acmmGroup;
+        m_groups[id] = acmmGroup;
     }
 
     return acmmGroup;

@@ -78,11 +78,11 @@ void AudioFramePacketizer::onFrame(const Frame& frame)
         return;
     }
 
-    boost::shared_lock<boost::shared_mutex> lock1(m_transport_mutex);
+    boost::shared_lock<boost::shared_mutex> lock(m_transport_mutex);
     if (!audio_sink_) {
         return;
     }
-    lock1.unlock();
+    lock.unlock();
 
     if (frame.length <= 0)
         return;
