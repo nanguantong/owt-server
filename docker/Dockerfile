@@ -117,7 +117,7 @@ RUN wget -c ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg
 
 
 # Install node
-ARG NODE_VER=v14.19.0
+ARG NODE_VER=v16.15.0
 ARG NODE_REPO=https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-x64.tar.xz
 
 RUN wget ${NODE_REPO} && \
@@ -173,7 +173,7 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends python libgl
 # 3. Clone webrtc source code and patch
 RUN git config --global user.email "zww0602jsj@gmail.com" && \
     git config --global user.name "nanguantong" && \
-    git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
+    git clone --depth=5 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
 
     # Install node modules for owt
     npm install -g --loglevel error node-gyp@6.1.0 grunt-cli underscore jsdoc && \
@@ -228,7 +228,7 @@ WORKDIR /home
 
 # Prerequisites
 # Install node
-ARG NODE_VER=v14.19.0
+ARG NODE_VER=v16.15.0
 ARG NODE_REPO=https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-x64.tar.xz
 
 RUN apt-get update && apt-get install -y -q --no-install-recommends ca-certificates wget xz-utils rabbitmq-server mongodb libboost-system-dev libboost-thread-dev liblog4cxx-dev libglib2.0-0 libfreetype6-dev curl sudo
