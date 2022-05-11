@@ -173,7 +173,7 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends python libgl
 # 3. Clone webrtc source code and patch
 RUN git config --global user.email "zww0602jsj@gmail.com" && \
     git config --global user.name "nanguantong" && \
-    git clone --depth=5 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
+    git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
 
     # Install node modules for owt
     npm install -g --loglevel error node-gyp@6.1.0 grunt-cli underscore jsdoc && \
