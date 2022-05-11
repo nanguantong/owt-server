@@ -216,6 +216,7 @@ module.exports = function (spec, spawnOptions, onNodeAbnormallyQuit, onTaskAdded
             } else {
               log.debug('Node not ready', id, 'give up'); 
               dropNode(id);
+              clearInterval(interval);
               reject('node not ready');
             }
           }

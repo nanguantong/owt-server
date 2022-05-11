@@ -109,7 +109,7 @@ public:
         SYNC_MODE_SLAVE,
     };
 
-    JitterBuffer (std::string name, SyncMode syncMode, JitterBufferListener *listener, int64_t maxBufferingMs = 1000);
+    JitterBuffer (const std::string& name, SyncMode syncMode, JitterBufferListener *listener, int64_t maxBufferingMs = 1000);
     virtual ~JitterBuffer ();
 
     void start(uint32_t delay = 0);

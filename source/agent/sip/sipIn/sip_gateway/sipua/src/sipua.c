@@ -16,7 +16,7 @@
 
 struct sipua_entity {         /* sip ua entity */
 	void *ep;
-	struct le le;             /**< Linked list element                */
+	struct le le;             /**< Linked list element */
 	struct mqueue *mq;
 	struct uag *uag;
 	pthread_t     thid;
@@ -57,7 +57,7 @@ static int construct_uag(struct uag **uagp, void *ep, const char *sip_server, co
 
     sprintf(account_str, "%.128s <sip:%.128s:%.64s@%.128s>\n", disp_name, user_name, password, sip_server);
 
-	err = uag_alloc(uagp, "Intel Integrated SIPUA", ep, sipua_trans_udp ? true : false, sipua_trans_tcp ? true : false, sipua_trans_tls ? true : false, sipua_prefer_ipv6 ? true : false);
+	err = uag_alloc(uagp, "Nanuns SIPUA", ep, sipua_trans_udp ? true : false, sipua_trans_tcp ? true : false, sipua_trans_tls ? true : false, sipua_prefer_ipv6 ? true : false);
 	if (err){
 		*uagp = NULL;
 		goto out;
@@ -120,7 +120,7 @@ static void sipua_destructor(void *arg)
 {
 	struct sipua_entity *sipua = arg;
 
-        if (sipua->mq) {
+    if (sipua->mq) {
 		mqueue_push(sipua->mq, SIPUA_TERMINATE, NULL);
 	}
 

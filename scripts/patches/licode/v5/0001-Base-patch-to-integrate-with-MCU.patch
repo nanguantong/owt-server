@@ -18,8 +18,8 @@ index dfeb2be..d218b35 100644
    DEFINE_LOGGER(SdpInfo, "SdpInfo");
  
  
--  static const char *SDP_IDENTIFIER = "LicodeMCU";
-+  static const char *SDP_IDENTIFIER = "IntelWebRTCMCU";
+-  static const char *SDP_IDENTIFIER = "NanunsMCU";
++  static const char *SDP_IDENTIFIER = "NanunsWebRTCMCU";
    static const char *cand = "a=candidate:";
    static const char *crypto = "a=crypto:";
    static const char *group = "a=group:";

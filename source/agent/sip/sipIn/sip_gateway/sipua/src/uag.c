@@ -439,7 +439,7 @@ struct ua *uag_find_aor(const struct uag *uag, const char *aor)
 {
 	struct ua *ua = uag->ua_cur;
 
-	if (str_isset(aor) && str_cmp(ua->acc->aor, aor))
+	if (str_isset(aor) && !str_cmp(ua->acc->aor, aor))
 		return ua;
 	else
 		return NULL;

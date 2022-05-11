@@ -70,10 +70,11 @@ install_build_deps() {
 }
 
 install_fdkaac(){
-  local VERSION="0.1.6"
+  local VERSION="2.0.2"
   local SRC="fdk-aac-${VERSION}.tar.gz"
   local SRC_URL="http://sourceforge.net/projects/opencore-amr/files/fdk-aac/${SRC}/download"
-  local SRC_MD5SUM="13c04c5f4f13f4c7414c95d7fcdea50f"
+  local SRC_MD5SUM="b41222194b31f570b3132bd622a9aef6"
+
 
   echo "Downloading fdk-aac-${VERSION}"
   [[ ! -s ${SRC} ]] && wget -c ${SRC_URL} -O ${SRC}

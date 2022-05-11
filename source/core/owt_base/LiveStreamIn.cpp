@@ -157,7 +157,7 @@ void FramePacketBuffer::clear()
 
 DEFINE_LOGGER(JitterBuffer, "owt.LiveStreamIn.JitterBuffer");
 
-JitterBuffer::JitterBuffer(std::string name, SyncMode syncMode, JitterBufferListener *listener, int64_t maxBufferingMs)
+JitterBuffer::JitterBuffer(const std::string& name, SyncMode syncMode, JitterBufferListener *listener, int64_t maxBufferingMs)
     : m_name(name)
     , m_syncMode(syncMode)
     , m_isClosing(false)

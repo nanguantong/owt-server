@@ -48,7 +48,7 @@ var memCollector = function (period, onLoad) {
     }, period);
 
     this.stop = function () {
-        log.debug("To mem cpu load collector.");
+        log.debug("To stop mem cpu load collector.");
         clearInterval(interval);
     };
 };

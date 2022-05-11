@@ -17,7 +17,7 @@ ARG NICE_REPO=http://nice.freedesktop.org/releases/libnice-${NICE_VER}.tar.gz
 ARG LIBNICE_PATCH_VER="5.0"
 ARG LIBNICE_PATCH_REPO=https://github.com/open-webrtc-toolkit/owt-server/archive/v${LIBNICE_PATCH_VER}.tar.gz
 
-RUN apt-get update && apt-get install -y -q --no-install-recommends libglib2.0-dev
+RUN apt-get update && apt-get install -y -q --no-install-recommends libglib2.0-dev curl
 
 RUN wget -O - ${NICE_REPO} | tar xz && \
     cd libnice-${NICE_VER} && \
@@ -34,7 +34,7 @@ RUN wget -O - ${NICE_REPO} | tar xz && \
 
 
 # Build open ssl
-ARG OPENSSL_VER="1.1.1j"
+ARG OPENSSL_VER="1.1.1m"
 ARG OPENSSL_REPO=https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
 
 RUN wget -O - ${OPENSSL_REPO} | tar xz && \
@@ -57,7 +57,7 @@ RUN git clone ${LIBRE_REPO} && \
 
 
 # Build usrsctp
-ARG USRSCTP_VERSION="30d7f1bd0b58499e1e1f2415e84d76d951665dc8"
+ARG USRSCTP_VERSION="ca9271dc5f21420b952b53b8ab25b9aed7b99165"
 ARG USRSCTP_FILE="${USRSCTP_VERSION}.tar.gz"
 ARG USRSCTP_EXTRACT="usrsctp-${USRSCTP_VERSION}"
 ARG USRSCTP_URL="https://github.com/sctplab/usrsctp/archive/${USRSCTP_FILE}"
@@ -72,10 +72,10 @@ RUN wget -O - ${USRSCTP_URL} | tar xz && \
 
 
 # Build libsrtp2
-ARG SRTP2_VER="2.1.0"
+ARG SRTP2_VER="2.4.2"
 ARG SRTP2_REPO=https://codeload.github.com/cisco/libsrtp/tar.gz/v${SRTP2_VER}
 
-RUN apt-get update && apt-get install -y -q --no-install-recommends curl
+#RUN apt-get update && apt-get install -y -q --no-install-recommends curl
 
 RUN curl -o libsrtp-${SRTP2_VER}.tar.gz ${SRTP2_REPO} && \
     tar xzf libsrtp-${SRTP2_VER}.tar.gz && \
@@ -87,18 +87,31 @@ RUN curl -o libsrtp-${SRTP2_VER}.tar.gz ${SRTP2_REPO} && \
     make install
 
 
+# Build fdkaac
+ARG FDKAAC_VER="2.0.2"
+ARG FDKAAC_DIR="fdk-aac-${FDKAAC_VER}"
+ARG FDKAAC_SRC="${FDKAAC_DIR}.tar.gz"
+ARG FDKAAC_SRC_URL="http://sourceforge.net/projects/opencore-amr/files/fdk-aac/${FDKAAC_SRC}/download"
+
+RUN wget -c ${FDKAAC_SRC_URL} -O ${FDKAAC_SRC} && tar xf ${FDKAAC_SRC} && mv ${FDKAAC_DIR} fdkaac && \
+# Compile fdkaac
+    cd fdkaac && \
+    export PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig" && \
+    ./configure --prefix="/usr/local" --libdir=/usr/local/lib/x86_64-linux-gnu --enable-shared --disable-static && \
+    make && \
+    make install
+
 # Fetch FFmpeg source
-ARG FFMPEG_VER="4.1.3"
+ARG FFMPEG_VER="4.4.1"
 ARG FFMPEG_DIR="ffmpeg-${FFMPEG_VER}"
 ARG FFMPEG_SRC="${FFMPEG_DIR}.tar.bz2"
 ARG FFMPEG_SRC_URL="http://ffmpeg.org/releases/${FFMPEG_SRC}"
 
-RUN wget ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg && \
-    cd FFmpeg  ;
+RUN wget -c ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg && \
 # Compile FFmpeg
-RUN cd /home/FFmpeg && \
+    cd FFmpeg && \
     export PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig" && \
-    ./configure --prefix="/usr/local" --libdir=/usr/local/lib/x86_64-linux-gnu --enable-shared --disable-static --disable-libvpx --disable-vaapi --enable-libfreetype && \
+    ./configure --prefix="/usr/local" --libdir=/usr/local/lib/x86_64-linux-gnu --enable-shared --disable-static --disable-libvpx --disable-vaapi --enable-libfreetype --enable-libfdk-aac --enable-nonfree && \
     make -j8 && \
     make install
 
@@ -113,7 +126,7 @@ RUN wget ${NODE_REPO} && \
 
 
 # Fetch SVT-HEVC
-ARG SVT_HEVC_VER=v1.3.0
+ARG SVT_HEVC_VER=v1.5.1
 ARG SVT_HEVC_REPO=https://github.com/intel/SVT-HEVC
 
 RUN git clone ${SVT_HEVC_REPO} && \
@@ -121,35 +134,35 @@ RUN git clone ${SVT_HEVC_REPO} && \
     export PKG_CONFIG_PATH="/usr/local/lib/x86_64-linux-gnu/pkgconfig" && \
     git checkout ${SVT_HEVC_VER} && \
     mkdir -p ../../Bin/Release && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib/x86_64-linux-gnu -DCMAKE_ASM_NASM_COMPILER=yasm ../.. && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=/usr/local/lib/x86_64-linux-gnu -DCMAKE_ASM_NASM_COMPILER=yasm ../.. && \
     make -j8 && \
     make install 
 
 
 # Install json_hpp
-ARG JSON_VER=v3.6.1
+ARG JSON_VER=v3.10.5
 ARG JSON_LINK=https://github.com/nlohmann/json/releases/download/${JSON_VER}/json.hpp
 
 RUN wget -c ${JSON_LINK} && mv json.hpp /usr/include/
 
 
 # Build OWT specific modules
-ARG OWTSERVER_REPO=https://github.com/open-webrtc-toolkit/owt-server.git
-ARG OPENH264_MAJOR=1
-ARG OPENH264_MINOR=7
-ARG OPENH264_SOVER=4
+ARG OPENH264_MAJOR=2
+ARG OPENH264_MINOR=2
+ARG OPENH264_SOVER=6
 ARG OPENH264_SOURCENAME=v${OPENH264_MAJOR}.${OPENH264_MINOR}.0.tar.gz
 ARG OPENH264_SOURCE=https://github.com/cisco/openh264/archive/v${OPENH264_MAJOR}.${OPENH264_MINOR}.0.tar.gz
 ARG OPENH264_BINARYNAME=libopenh264-${OPENH264_MAJOR}.${OPENH264_MINOR}.0-linux64.${OPENH264_SOVER}.so
-ARG OPENH264_BINARY=https://github.com/cisco/openh264/releases/download/v${OPENH264_MAJOR}.${OPENH264_MINOR}.0/${OPENH264_BINARYNAME}.bz2
+ARG OPENH264_BINARY=http://ciscobinary.openh264.org/${OPENH264_BINARYNAME}.bz2
 ARG LICODE_COMMIT="8b4692c88f1fc24dedad66b4f40b1f3d804b50ca"
 ARG LICODE_REPO=https://github.com/lynckia/licode.git
 ARG WEBRTC_REPO=https://github.com/open-webrtc-toolkit/owt-deps-webrtc.git
-ARG SVT_VER=v1.3.0
+ARG SVT_VER=v1.5.1
 ARG SVT_REPO=https://github.com/intel/SVT-HEVC.git
 ARG SERVER_PATH=/home/owt-server
-ARG OWT_SDK_REPO=https://github.com/open-webrtc-toolkit/owt-client-javascript.git
-ARG OWT_BRANCH=master
+ARG OWTSERVER_REPO=https://github.com/nanguantong/owt-server.git
+ARG OWT_SDK_REPO=https://github.com/nanguantong/owt-client-javascript.git
+ARG OWT_BRANCH=test
 ARG IMG_APP_PATH=/app_data/
 ENV APP_PATH=${IMG_APP_PATH}
 
@@ -158,8 +171,8 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends python libgl
 # 1. Clone OWT server source code 
 # 2. Clone licode source code and patch
 # 3. Clone webrtc source code and patch
-RUN git config --global user.email "you@example.com" && \
-    git config --global user.name "Your Name" && \
+RUN git config --global user.email "zww0602jsj@gmail.com" && \
+    git config --global user.name "nanguantong" && \
     git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
 
     # Install node modules for owt
@@ -186,7 +199,7 @@ RUN cd ${SERVER_PATH}/third_party && git clone ${LICODE_REPO} && \
     git am ${SERVER_PATH}/scripts/patches/licode/*.patch
 
 # Install webrtc for owt
-RUN cd ${SERVER_PATH}/third_party && mkdir webrtc  && cd webrtc &&\
+RUN cd ${SERVER_PATH}/third_party && mkdir webrtc && cd webrtc && \
     export GIT_SSL_NO_VERIFY=1 && \
     git clone -b 59-server ${WEBRTC_REPO} src && \
     ./src/tools-woogeen/install.sh && \
@@ -198,18 +211,19 @@ RUN mkdir ${SERVER_PATH}/third_party/webrtc-m88 && \
     /bin/bash ${SERVER_PATH}/scripts/installWebrtc.sh
 
 # Get js client sdk for owt
-RUN cd /home && git clone --depth=1 -b ${OWT_BRANCH} ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm install && grunt  && \
+RUN cd /home && git clone --depth=1 -b ${OWT_BRANCH} ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm install && grunt && \
     mkdir ${SERVER_PATH}/third_party/quic-lib && \
     export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu && \
     cd ${SERVER_PATH}/third_party/quic-lib && wget https://github.com/open-webrtc-toolkit/owt-deps-quic/releases/download/v0.1/dist.tgz && tar xzf dist.tgz && \
     #Build and pack owt
-    cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu-all -lp /usr/local/ssl/lib -ip /usr/local/ssl/include -r -c && \
+    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/local/include/svt-hevc && \
+    cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu -lp /usr/local/ssl/lib -ip /usr/local/ssl/include -r -c && \
     ./scripts/pack.js -t all --install-module --no-pseudo --app-path /home/owt-client-javascript/dist/samples/conference
 
 
 FROM ubuntu:18.04 AS owt-run
 LABEL Description="This is the image for building OWT on Ubuntu 18.04"
-LABEL Vendor="Intel Corporation"
+LABEL Vendor="Nanuns Corporation"
 WORKDIR /home
 
 # Prerequisites

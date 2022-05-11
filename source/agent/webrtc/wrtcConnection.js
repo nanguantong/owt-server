@@ -332,7 +332,7 @@ module.exports = function (spec, on_status, on_track) {
         on_status({type: 'failed', reason: 'Ice procedure failed.'});
 
       } else if (evt.type === 'ready') {
-        log.debug('Connection ready, ', wrtc.wrtcId);
+        log.debug('Connection ready, ', wrtc.id);
         on_status({
           type: 'ready'
         });

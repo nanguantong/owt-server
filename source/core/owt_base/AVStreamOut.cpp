@@ -277,6 +277,8 @@ reconnect:
                 notifyAsyncEvent("fatal", "Cannot write frame");
                 break;
             }
+        } else {
+            //connectRetry = getReconnectCount();
         }
     }
     av_write_trailer(m_context);
@@ -467,19 +469,20 @@ bool AVStreamOut::writeFrame(AVStream *stream, boost::shared_ptr<MediaFrame> med
     pkt.stream_index = stream->index;
 
     if (isVideoFrame(mediaFrame->m_frame)) {
+        int64_t currTs = currentTimeMs();
         if (m_lastKeyFrameTimestamp == 0)
-            m_lastKeyFrameTimestamp = currentTimeMs();
+            m_lastKeyFrameTimestamp = currTs;
 
         if (mediaFrame->m_frame.additionalInfo.video.isKeyFrame) {
             pkt.flags |= AV_PKT_FLAG_KEY;
-            m_lastKeyFrameTimestamp = currentTimeMs();
+            m_lastKeyFrameTimestamp = currTs;
         }
 
-        if (m_lastKeyFrameTimestamp + 1.1 * getKeyFrameInterval() < currentTimeMs()) {
+        if (m_lastKeyFrameTimestamp + 1.1 * getKeyFrameInterval() < currTs) {
             ELOG_DEBUG("Request video key frame");
 
             deliverFeedbackMsg(FeedbackMsg{.type = VIDEO_FEEDBACK, .cmd = REQUEST_KEY_FRAME});
-            m_lastKeyFrameTimestamp = currentTimeMs();
+            m_lastKeyFrameTimestamp = currTs;
         }
     }
 

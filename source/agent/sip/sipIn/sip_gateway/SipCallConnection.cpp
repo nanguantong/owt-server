@@ -167,9 +167,9 @@ void SipCallConnection::onSipAudioData(char* data, int len)
         RTPHeader* head = reinterpret_cast<RTPHeader*>(data);
         if (m_audioCodec == "opus")
             head->setPayloadType(OPUS_48000_PT);
-       {
+        {
             audio_sink_->deliverAudioData(std::make_shared<erizo::DataPacket>(0, data, len, erizo::AUDIO_PACKET));
-       }
+        }
    }
 }
 

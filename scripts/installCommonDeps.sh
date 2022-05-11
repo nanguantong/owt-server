@@ -21,10 +21,10 @@ check_proxy(){
 }
 
 install_fdkaac(){
-  local VERSION="0.1.6"
+  local VERSION="2.0.2"
   local SRC="fdk-aac-${VERSION}.tar.gz"
   local SRC_URL="http://sourceforge.net/projects/opencore-amr/files/fdk-aac/${SRC}/download"
-  local SRC_MD5SUM="13c04c5f4f13f4c7414c95d7fcdea50f"
+  local SRC_MD5SUM="b41222194b31f570b3132bd622a9aef6"
 
   local LIST_LIBS=`ls ${PREFIX_DIR}/lib/libfdk* 2>/dev/null`
   [ "$INCR_INSTALL" = true ] && [[ ! -z $LIST_LIBS ]] && \
@@ -246,9 +246,9 @@ install_openh264(){
     return 0
   fi
 
-  MAJOR=1
-  MINOR=7
-  SOVER=4
+  MAJOR=2
+  MINOR=2
+  SOVER=6
 
   rm $ROOT/third_party/openh264 -rf
   mkdir $ROOT/third_party/openh264
@@ -263,7 +263,7 @@ install_openh264(){
 
   # download
   wget https://github.com/cisco/openh264/archive/${SOURCE}
-  wget -c https://github.com/cisco/openh264/releases/download/v${MAJOR}.${MINOR}.0/${BINARY}.bz2
+  wget -c http://ciscobinary.openh264.org/${BINARY}.bz2
 
   # api
   tar -zxf ${SOURCE} openh264-${MAJOR}.${MINOR}.0/codec/api
@@ -453,7 +453,8 @@ install_quic(){
 }
 
 install_nicer(){
-  local COMMIT="24d88e95e18d7948f5892d04589acce3cc9a5880"
+  local COMMIT="3b4a3e2313e4d136e2ddb4ef031be06db72f9a04"
+
   pushd ${ROOT}/third_party >/dev/null
   rm -rf nICEr
   git clone https://github.com/lynckia/nICEr.git
@@ -479,11 +480,12 @@ install_libsrtp2(){
   echo "libsrtp2 already installed." && return 0
 
   if [ -d $LIB_DIR ]; then
+    local VERSION="2.4.2"
     cd $LIB_DIR
-    rm -rf libsrtp-2.1.0
-    curl -o libsrtp-2.1.0.tar.gz https://codeload.github.com/cisco/libsrtp/tar.gz/v2.1.0
-    tar -zxvf libsrtp-2.1.0.tar.gz
-    cd libsrtp-2.1.0
+    rm -rf libsrtp-${VERSION}
+    curl -o libsrtp-${VERSION}.tar.gz https://codeload.github.com/cisco/libsrtp/tar.gz/v${VERSION}
+    tar -zxvf libsrtp-${VERSION}.tar.gz
+    cd libsrtp-${VERSION}
     CFLAGS="-fPIC" ./configure --enable-openssl --prefix=$PREFIX_DIR --with-openssl-dir=$PREFIX_DIR
     make $FAST_MAKE -s V=0 && make uninstall && make install
     cd $CURRENT_DIR
@@ -562,7 +564,7 @@ install_libre() {
     rm -rf re
     git clone https://github.com/creytiv/re.git
     pushd re >/dev/null
-    git checkout v0.5.0
+    git checkout v0.5.0 # 0.6.1
     make SYSROOT_ALT=${PREFIX_DIR} RELEASE=1
     make install SYSROOT_ALT=${PREFIX_DIR} RELEASE=1 PREFIX=${PREFIX_DIR}
     popd >/dev/null
@@ -587,7 +589,7 @@ install_usrsctp() {
   echo "usrsctp already installed." && return 0
 
   if [ -d $LIB_DIR ]; then
-    local USRSCTP_VERSION="30d7f1bd0b58499e1e1f2415e84d76d951665dc8"
+    local USRSCTP_VERSION="ca9271dc5f21420b952b53b8ab25b9aed7b99165"
     local USRSCTP_FILE="${USRSCTP_VERSION}.tar.gz"
     local USRSCTP_EXTRACT="usrsctp-${USRSCTP_VERSION}"
     local USRSCTP_URL="https://github.com/sctplab/usrsctp/archive/${USRSCTP_FILE}"
@@ -665,7 +667,7 @@ install_json_hpp() {
   echo "json_hpp already installed." && return 0
 
   if [ -d $LIB_DIR ]; then
-    local DOWNLOAD_JSON_LINK="https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp"
+    local DOWNLOAD_JSON_LINK="https://github.com/nlohmann/json/releases/download/v3.10.5/json.hpp"
     pushd $LIB_DIR >/dev/null
     wget -c ${DOWNLOAD_JSON_LINK}
     mkdir -p ${PREFIX_DIR}/include
@@ -695,7 +697,7 @@ install_svt_hevc(){
   git clone https://github.com/intel/SVT-HEVC.git
 
   pushd SVT-HEVC >/dev/null
-  git checkout v1.3.0
+  git checkout v1.5.1
 
   if [[ "$OS" =~ .*centos.* ]]
   then

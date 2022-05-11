@@ -53,7 +53,7 @@ function InConnection(prot, minport, maxport, ticket) {
             conn = new quicIO.in(cf, kf);
             break;
         default:
-            prot = "sctp";
+            protocol = "sctp";
             conn = new SctpIn();
             break;
     }

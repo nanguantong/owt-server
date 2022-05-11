@@ -46,7 +46,7 @@ function do_join(conference_ctl, user_id, user_name, room, selfPortal, ok, err) 
             log.debug('join ok');
             safeCall(ok, joinResult.room.streams);
         }, function (reason) {
-            safeCall(err,reason);
+            safeCall(err, reason);
         });
 }
 
@@ -630,9 +630,10 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
                 var client_id = 'SipIn' + Math.round(Math.random() * 10000000000000);
                 handleIncomingCall(client_id, peerURI, function () {
                     log.debug('Accept call');
-                    gateway.accept(peerURI);
+                    gateway.accept(peerURI); // TODO: add requireAudio and requireVideo
                 }, function (reason) {
                     log.error('reject call error: ', reason);
+                    //delete calls[client_id];
                     gateway.reject(peerURI);
                 });
             } else {

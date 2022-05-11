@@ -29,11 +29,10 @@ SipEP::~SipEP()
     if (m_sipua) {
         sipua_delete(m_sipua);
     }
-
 }
 
 bool SipEP::sipRegister(const std::string& sipServerAddr, const std::string& userName,
-                             const std::string& password, const std::string& displayName)
+                        const std::string& password, const std::string& displayName)
 {
     if (m_state == INITIALISED && !m_sipua) {
         if (sipServerAddr.length() == 0 || userName.length() == 0) {
@@ -82,7 +81,7 @@ void SipEP::hangup(const std::string& peer, void *call)
 bool SipEP::accept(const std::string& peer)
 {
     ELOG_DEBUG("Web accepted");
-    if (m_state == REGISTERED ) {
+    if (m_state == REGISTERED) {
         sipua_accept(m_sipua, peer.c_str());
     }
     return true;
