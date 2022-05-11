@@ -176,6 +176,7 @@ RUN git config --global user.email "zww0602jsj@gmail.com" && \
     git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
 
     # Install node modules for owt
+    npm config set registry https://registry.npm.taobao.org && \
     npm install -g --loglevel error node-gyp@6.1.0 grunt-cli underscore jsdoc && \
     cd owt-server && npm install nan && \
 
