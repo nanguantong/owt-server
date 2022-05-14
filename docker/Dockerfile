@@ -48,6 +48,8 @@ RUN wget -O - ${OPENSSL_REPO} | tar xz && \
 # Build libre
 ARG LIBRE_VER="v0.5.0"
 ARG LIBRE_REPO=https://github.com/creytiv/re.git
+#ARG LIBRE_VER="v2.3.0"
+#ARG LIBRE_REPO=https://github.com/baresip/re.git USE_OPENSSL="/usr/local/ssl/" 
 
 RUN git clone ${LIBRE_REPO} && \
     cd re && \
@@ -117,7 +119,7 @@ RUN wget -c ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg
 
 
 # Install node
-ARG NODE_VER=v16.15.0
+ARG NODE_VER=v14.19.0
 ARG NODE_REPO=https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-x64.tar.xz
 
 RUN wget ${NODE_REPO} && \
@@ -212,14 +214,14 @@ RUN mkdir ${SERVER_PATH}/third_party/webrtc-m88 && \
     /bin/bash ${SERVER_PATH}/scripts/installWebrtc.sh
 
 # Get js client sdk for owt
-RUN cd /home && git clone --depth=1 -b ${OWT_BRANCH} ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm install && grunt && \
+RUN cd /home && git clone --depth=1 -b master ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm config set registry https://registry.npm.taobao.org && npm install && grunt && \
     mkdir ${SERVER_PATH}/third_party/quic-lib && \
     export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu && \
     cd ${SERVER_PATH}/third_party/quic-lib && wget https://github.com/open-webrtc-toolkit/owt-deps-quic/releases/download/v0.1/dist.tgz && tar xzf dist.tgz && \
     #Build and pack owt
     export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/local/include/svt-hevc && \
-    cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu -lp /usr/local/ssl/lib -ip /usr/local/ssl/include -r -c && \
-    ./scripts/pack.js -t all --install-module --no-pseudo --app-path /home/owt-client-javascript/dist/samples/conference
+    cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu -lp /usr/local/ssl/lib -ip /usr/local/ssl/include -r -c
+RUN cd ${SERVER_PATH} && ./scripts/pack.js -t all --install-module --no-pseudo --app-path /home/owt-client-javascript/dist/samples/conference
 
 
 FROM ubuntu:18.04 AS owt-run
@@ -229,7 +231,7 @@ WORKDIR /home
 
 # Prerequisites
 # Install node
-ARG NODE_VER=v16.15.0
+ARG NODE_VER=v14.19.0
 ARG NODE_REPO=https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-x64.tar.xz
 
 RUN apt-get update && apt-get install -y -q --no-install-recommends ca-certificates wget xz-utils rabbitmq-server mongodb libboost-system-dev libboost-thread-dev liblog4cxx-dev libglib2.0-0 libfreetype6-dev curl sudo

@@ -416,15 +416,14 @@ const char *uag_event_str(enum ua_event ev)
  */
 struct ua *uag_find(const struct uag *uag, const struct pl *cuser)
 {
-	
 	struct ua *ua = uag->ua_cur;
 
 	if (0 == pl_strcasecmp(cuser, ua->cuser))
 		return ua;
 	else if (0 == pl_casecmp(cuser, &ua->acc->luri.user))
 		return ua;
-  else
-    return NULL;
+	else
+		return NULL;
 }
 
 

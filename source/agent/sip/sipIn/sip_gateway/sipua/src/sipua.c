@@ -70,7 +70,6 @@ static int construct_uag(struct uag **uagp, void *ep, const char *sip_server, co
 		goto out;
 	}
 
-
 out:
 	return err;
 }

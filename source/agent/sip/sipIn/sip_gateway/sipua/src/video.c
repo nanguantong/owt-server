@@ -434,7 +434,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 {
 	struct video *v = arg;
 	int err;
-        void* call_owner = (v->call ? call_get_owner(v->call) : NULL);
+	void* call_owner = (v->call ? call_get_owner(v->call) : NULL);
 
 	if (!mb)
 		return;

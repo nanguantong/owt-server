@@ -130,7 +130,6 @@ VideoFrameMixerImpl::~VideoFrameMixerImpl()
         for (auto it = m_inputs.begin(); it != m_inputs.end(); ++it) {
             it->second.source->removeVideoDestination(it->second.decoder.get());
             it->second.decoder->removeVideoDestination(it->second.compositorIn.get());
-            m_inputs.erase(it);
         }
         m_inputs.clear();
     }

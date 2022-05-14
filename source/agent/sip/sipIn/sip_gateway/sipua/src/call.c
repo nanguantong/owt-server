@@ -503,7 +503,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		goto out;
 
 	err = sdp_session_set_lattr(call->sdp, true,
-				    "tool", "intel-sipua " SIPUA_VERSION);
+				    "tool", "nanuns-sipua " SIPUA_VERSION);
 	if (err)
 		goto out;
 

@@ -226,11 +226,11 @@ var Portal = function(spec, rpcReq) {
     log.debug('onSessionSignaling, participantId:', participantId, 'sessionId:', sessionId, 'signaling:', signaling);
 
     var participant = participants[participantId];
-    if (participants[participantId] === undefined) {
+    if (participant === undefined) {
       return Promise.reject('Participant has NOT joined');
     }
  
-    return rpcReq.onSessionSignaling(participants[participantId].controller, sessionId, signaling);
+    return rpcReq.onSessionSignaling(participant.controller, sessionId, signaling);
   };
 
   that.text = function(participantId, to, msg) {

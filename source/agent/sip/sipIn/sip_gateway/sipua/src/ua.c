@@ -37,7 +37,7 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	if (!ua)
 		return;
 
-        uag = ua->owner;
+	uag = ua->owner;
 	va_start(ap, fmt);
 	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
@@ -251,7 +251,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 		case ANSWERMODE_MANUAL:
 		default:
-            ua_printf(ua, "Call incomming: %s owner ep %p\n", peeruri, ua->owner->ep);
+			ua_printf(ua, "Call incomming: %s owner ep %p\n", peeruri, ua->owner->ep);
 			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 			ep_incoming_call(ua->owner->ep,
 				             call_has_audio(call) ? 1 : 0,
@@ -549,7 +549,7 @@ int ua_alloc(struct ua **uap, const char *aor, struct uag *uag)
 
 	/* Register clients */
 	if (uag->cfg && str_isset(uag->cfg->uuid))
-	    add_extension(ua, "gruu");
+		add_extension(ua, "gruu");
 
 	if (ua->acc->regint) {
 		err = reg_add(&ua->regl, ua, 0);
@@ -1081,5 +1081,5 @@ struct list *ua_calls(const struct ua *ua)
 
 const char *ua_local_cuser(const struct ua *ua)
 {
-        return ua ? ua->cuser : NULL;
+	return ua ? ua->cuser : NULL;
 }

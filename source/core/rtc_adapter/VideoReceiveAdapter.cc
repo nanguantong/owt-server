@@ -290,11 +290,11 @@ std::unique_ptr<webrtc::VideoDecoder> VideoReceiveAdapterImpl::CreateVideoDecode
 
 int VideoReceiveAdapterImpl::onRtpData(char* data, int len)
 {
-    std::shared_ptr<DataPacket> wp = std::make_shared<DataPacket>(data, len);
-    taskQueue()->PostTask([this, wp]() {
+    rtc::CopyOnWriteBuffer buffer(data, len);
+    taskQueue()->PostTask([this, buffer]() {
         call()->Receiver()->DeliverPacket(
             webrtc::MediaType::VIDEO,
-            rtc::CopyOnWriteBuffer(wp->data, wp->length),
+            buffer,
             rtc::TimeUTCMicros());
     });
     return len;
