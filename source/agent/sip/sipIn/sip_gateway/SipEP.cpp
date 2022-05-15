@@ -41,7 +41,7 @@ bool SipEP::sipRegister(const std::string& sipServerAddr, const std::string& use
         }
 
         if (!sipua_new(&m_sipua, this, sipServerAddr.c_str(), userName.c_str(), password.c_str(), displayName.c_str())) {
-            ELOG_WARN("!!Create sipua OK!\n");
+            ELOG_INFO("!!Create sipua OK!\n");
             m_state = REGISTERING;
             return true;
         } else {
