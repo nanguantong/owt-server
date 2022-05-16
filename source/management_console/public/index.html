@@ -19,7 +19,7 @@
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
             <li id="welcome"></li>
-            <li><a href="#"><button type="button" id="profile" class="btn btn-xs" data-toggle="modal" data-target="#myModal">Profile</button></a></li>
+            <li><a href="#"><button type="button" id="profile" class="btn btn-xs" data-toggle="modal" data-target="#myModal">信息</button></a></li>
           </ul>
         </div>
       </div>
@@ -32,18 +32,23 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-            <h4 class="modal-title" id="myModalLabel">Profile</h4>
+            <h4 class="modal-title" id="myModalLabel">信息</h4>
           </div>
           <div class="modal-body">
             <label for="inputId">Service Id</label>
             <input type="email" id="inputId" class="form-control" placeholder="" autocomplete="off" required>
             <label for="inputKey">Service Key</label>
             <input type="password" id="inputKey" class="form-control" placeholder="" autocomplete="off" required autofocus>
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" value="remember-me"> 记住我
+              </label>
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" id="saveServiceInfo">Sign In</button>
-            <button type="button" class="btn btn-danger" id="clearCookie">Sign Out</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            <button type="button" class="btn btn-primary" id="saveServiceInfo">登录</button>
+            <button type="button" class="btn btn-danger" id="clearCookie">退出</button>
           </div>
         </div>
       </div>
@@ -64,10 +69,10 @@
       <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
-            <li class="li hideLi"><a href="javascript:void(0);" onclick="a_click('service', this)">Overview <span class="sr-only">(current)</span></a></li>
-            <li class="li normal active"><a href="javascript:void(0);" onclick="a_click('room', this)">Room Management</a></li>
+            <li class="li hideLi"><a href="javascript:void(0);" onclick="a_click('service', this)">概览 <span class="sr-only">(current)</span></a></li>
+            <li class="li normal active"><a href="javascript:void(0);" onclick="a_click('room', this)">房间管理</a></li>
             <!--Runtime Configuration is not implemented-->
-            <li class="li hideLi" style="display: none;"><a href="javascript:void(0);" onclick="a_click('runtime', this)">Runtime Configuration</a></li>
+            <li class="li hideLi" style="display: none;"><a href="javascript:void(0);" onclick="a_click('runtime', this)">运行配置</a></li>
           </ul>
           <div class="footer">
             <div class="container">

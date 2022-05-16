@@ -32,7 +32,7 @@ class ServiceApp extends React.Component {
     this.setState({ loading: true });
     restApi.getServices((err, resp) => {
       if (err) {
-        return notify('error', 'Failed to get services', err);
+        return notify('error', '获取所有服务失败', err);
       }
       const ret = JSON.parse(resp);
       const sortedData = _.orderBy(
@@ -71,7 +71,7 @@ class ServiceApp extends React.Component {
       e(
         'span',
         {className: 'input-group-addon'},
-        'Name'
+        '名称'
       ),
       e(
         'input',
@@ -87,7 +87,7 @@ class ServiceApp extends React.Component {
       e(
         'span',
         {className: 'input-group-addon'},
-        'Key'
+        '密钥'
       ),
       e(
         'input',
@@ -113,7 +113,7 @@ class ServiceApp extends React.Component {
             }
           }
         ),
-        'Encrypted'
+        '加密'
       ),
       e(
         'span',
@@ -125,7 +125,7 @@ class ServiceApp extends React.Component {
             className: 'btn btn-default',
             onClick: (e) => {
               if (this.state.createName === '' || this.state.createKey === '') {
-                notify('Warning', 'Create Service', 'Empty service name or key');
+                notify('Warning', '创建服务', '服务名称或者密钥为空');
                 return;
               }
               restApi.createService(
@@ -133,16 +133,16 @@ class ServiceApp extends React.Component {
                 this.state.createKey,
                 (err, resp) => {
                   if (err) {
-                    return notify('error', 'Create Service Failed', err);
+                    return notify('error', '创建服务失败', err);
                   }
                   const ret = JSON.parse(resp);
-                  notify('info', 'Create Service Success', ret._id);
+                  notify('info', '创建服务成功', ret._id);
                   this.fetchData(this.pagination);
                 }
               );
             }
           },
-          'Create'
+          '创建'
         )
       )
     );
@@ -158,17 +158,17 @@ class ServiceApp extends React.Component {
         {
           className: 'btn btn-sm btn-warning',
           onClick: ()=>{
-            notifyConfirm('Delete', 'Are you sure want to delete Service ' + opService._id, ()=>{
+            notifyConfirm('删除', '是否删除服务 ' + opService._id, ()=>{
               restApi.deleteService(opService._id, (err, resp) => {
                 if (err) {
-                  return notify('error', 'Delete Service', resp);
+                  return notify('error', '删除服务', resp);
                 }
                 this.fetchData(this.pagination);
               });
             });
           }
         },
-        'Remove'
+        '删除'
       )
     );
   }
@@ -181,21 +181,21 @@ class ServiceApp extends React.Component {
         accessor: '_id'
       },
       {
-        Header: 'Name',
+        Header: '名称',
         accessor: 'name',
       },
       {
-        Header: 'key',
+        Header: '密钥',
         accessor: 'key',
       },
       {
         id: 'encrypted',
-        Header: 'encrypted',
+        Header: '加密',
         accessor: d => (!!d.encrypted).toString()
       },
       {
         id: 'rooms',
-        Header: 'Room Count',
+        Header: '房间数量',
         accessor: d => d.rooms ? d.rooms.length : 0
       },
       {
@@ -208,7 +208,7 @@ class ServiceApp extends React.Component {
     const onFetchData = this.fetchData;
 
     return e('div', {},
-      e('h1', {className: 'page-header'}, 'Services'),
+      e('h1', {className: 'page-header'}, '所有服务'),
       this.renderCreator(),
       e(
         ReactTable,
@@ -298,7 +298,7 @@ class RoomView extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Audio of View'),
+      e('div', {className: 'panel-heading'}, '音频配置'),
       e(
         'div',
         {className: 'panel-body'},
@@ -308,7 +308,7 @@ class RoomView extends React.Component {
           e(
             'div',
             {className: 'row form-group'},
-            e('div', {className: 'col-sm-3'}, e('label', {}, 'Format')),
+            e('div', {className: 'col-sm-3'}, e('label', {}, '格式')),
             e('div', {className: 'col-sm-3'}, audioSelect),
           ),
           e(
@@ -317,7 +317,7 @@ class RoomView extends React.Component {
             e(
               'div',
               {className: 'col-sm-3'},
-              this.renderCheckBox('VAD Enabled', 'audio.vad'),
+              this.renderCheckBox('VAD 使能', 'audio.vad'),
             )
           )
         )
@@ -416,7 +416,7 @@ class RoomView extends React.Component {
         e(
           'div',
           {className: 'col-sm-6'},
-          e('label', {}, 'Layout-Custom'),
+          e('label', {}, '自定义布局'),
           e(
             'textarea',
             {
@@ -438,11 +438,11 @@ class RoomView extends React.Component {
                   const layouts = JSON.parse(this.state.layoutArea);
                   this.handleChange(path, layouts);
                 } catch (err) {
-                  notify('warning', 'Save Layout', 'Invalid Format');
+                  notify('warning', '保存', '格式无效');
                 }
               }
             },
-            'Save Layout'
+            '保存'
           )
         )
       );
@@ -451,29 +451,29 @@ class RoomView extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Video of View'),
+      e('div', {className: 'panel-heading'}, '视频配置'),
       e(
         'div',
         {className: 'panel-body'},
         e(
           'div',
           {className: 'container-fluid'},
-          formRow('Format', videoSelect),
-          formRow('Resolution-width',
+          formRow('格式', videoSelect),
+          formRow('宽',
             formInput('text', 'video.parameters.resolution.width', 640)),
-          formRow('Resolution-height',
+          formRow('高',
             formInput('text', 'video.parameters.resolution.height', 480)),
-          formRow('Framerate',
+          formRow('帧率',
             formInput('text', 'video.parameters.framerate', 24)),
-          formRow('Bitrate',
+          formRow('码率',
             formInput('text', 'video.parameters.bitrate', 0)),
-          formRow('KeyFrameInterval',
+          formRow('关键帧间隔',
             formInput('text', 'video.parameters.keyFrameInterval', 100)),
-          formRow('BackgroundColor',
+          formRow('背景颜色',
             formColor('video.bgColor')),
-          formRow('MaxInput',
+          formRow('房间最大输入数',
             formInput('number', 'video.maxInput', 8)),
-          formRow('MotionFactor',
+          formRow('视频运动阈值',
             formInput('number', 'video.motionFactor', 0.6)),
           e(
             'div',
@@ -481,12 +481,12 @@ class RoomView extends React.Component {
             e(
               'div',
               {className: 'col-sm-3'},
-              this.renderCheckBox('KeepActiveInputPrimary', 'video.keepActiveInputPrimary'),
+              this.renderCheckBox('保持活动输入', 'video.keepActiveInputPrimary'),
             )
           ),
-          formRow('Layout-FitPolicy',
+          formRow('布局策略',
             formSelect(['letterbox', 'crop'], 'video.layout.fitPolicy')),
-          formRow('Layout-BaseTemplate',
+          formRow('布局基础模板',
             formSelect(['fluid', 'lecture', 'void'], 'video.layout.templates.base')),
           formArea('video.layout.templates.custom')
         )
@@ -516,7 +516,7 @@ class RoomView extends React.Component {
       'input',
       {
         className: 'form-control',
-        placeholder: 'Label',
+        placeholder: '请输入',
         type: 'text',
         onChange: (e) => {
           this.setState({create: e.target.value});
@@ -532,7 +532,7 @@ class RoomView extends React.Component {
           this.props.onViewCreate({label: this.state.create});
         }
       },
-      'Create View'
+      '创建视图'
     );
     const removeButton = e(
       'button',
@@ -544,13 +544,13 @@ class RoomView extends React.Component {
           }
         }
       },
-      'Remove'
+      '删除'
     );
 
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Views'),
+      e('div', {className: 'panel-heading'}, '视图'),
       e(
         'div',
         {className: 'panel-body'},
@@ -712,20 +712,20 @@ class RoomModal extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Media In'),
+      e('div', {className: 'panel-heading'}, '媒体输入'),
       e(
         'div',
         {className: 'panel-body'},
         e(
           'div',
           {className: 'form-group'},
-          e('label', {className: 'col-sm-1 control-label'}, 'Audio'),
+          e('label', {className: 'col-sm-1 control-label'}, '音频'),
           ...audioCheckBoxes
         ),
         e(
           'div',
           {className: 'form-group'},
-          e('label', {className: 'col-sm-1 control-label'}, 'Video'),
+          e('label', {className: 'col-sm-1 control-label'}, '视频'),
           ...videoCheckBoxes
         )
       )
@@ -779,51 +779,51 @@ class RoomModal extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Media Out'),
+      e('div', {className: 'panel-heading'}, '媒体输出'),
       e(
         'div',
         {className: 'panel-body'},
         e(
           'div',
           {className: 'form-group'},
-          e('label', {className: 'col-sm-1 control-label'}, 'Audio'),
+          e('label', {className: 'col-sm-1 control-label'}, '音频'),
           ...audioCheckBoxes
         ),
         e(
           'div',
           {className: 'form-group'},
-          e('label', {className: 'col-sm-1 control-label'}, 'Video'),
+          e('label', {className: 'col-sm-1 control-label'}, '视频'),
           ...videoCheckBoxes
         ),
         e(
           'div',
           {className: 'panel panel-default'},
-          e('div', {className: 'panel-heading'}, 'Video Parameters'),
+          e('div', {className: 'panel-heading'}, '视频参数'),
           e(
             'div',
             {className: 'panel-body'},
             e(
               'div',
               {className: 'form-group'},
-              e('label', {style: {display: 'block'}}, 'Resolution'),
+              e('label', {style: {display: 'block'}}, '分辨率'),
               ...resolutionBoxes
             ),
             e(
               'div',
               {className: 'form-group'},
-              e('label', {style: {display: 'block'}}, 'Framerate'),
+              e('label', {style: {display: 'block'}}, '帧率'),
               ...framerateBoxes
             ),
             e(
               'div',
               {className: 'form-group'},
-              e('label', {style: {display: 'block'}}, 'Bitrate'),
+              e('label', {style: {display: 'block'}}, '码率'),
               ...bitrateBoxes
             ),
             e(
               'div',
               {className: 'form-group'},
-              e('label', {style: {display: 'block'}}, 'KeyFrameInterval'),
+              e('label', {style: {display: 'block'}}, '关键帧间隔'),
               ...kfiBoxes
             )
           )
@@ -834,12 +834,12 @@ class RoomModal extends React.Component {
 
   renderSip() {
     const room = this.state.room;
-    const sipRow = (path) => {
+    const sipRow = (path, name) => {
       const value = _.get(this.state.room.sip, path, '');
       return e(
         'div',
         {className: 'row form-group'},
-        e('div', {className: 'col-sm-3'}, e('label', {}, path)),
+        e('div', {className: 'col-sm-3'}, e('label', {}, name)),
         e(
           'div',
           {className: 'col-sm-3'},
@@ -872,9 +872,9 @@ class RoomModal extends React.Component {
         e(
           'div',
           {className: 'container-fluid'},
-          sipRow('sipServer'),
-          sipRow('username'),
-          sipRow('password'),
+          sipRow('sipServer', 'sip服务'),
+          sipRow('username', '用户名'),
+          sipRow('password', '密码'),
         ),
       )
     );
@@ -882,12 +882,12 @@ class RoomModal extends React.Component {
 
   renderNotifying() {
     const room = this.state.room;
-    const notifyRow = (path) => {
+    const notifyRow = (path, name) => {
       const value = _.get(this.state.room.notifying, path, '');
       return e(
         'div',
         {className: 'row form-group'},
-        e('div', {className: 'col-sm-3'}, e('label', {}, path)),
+        e('div', {className: 'col-sm-3'}, e('label', {}, name)),
         e(
           'div',
           {className: 'col-sm-3'},
@@ -912,7 +912,7 @@ class RoomModal extends React.Component {
                 checked: value
               }
             ),
-            path
+            name
           )
         ),
       );
@@ -921,15 +921,15 @@ class RoomModal extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Notification'),
+      e('div', {className: 'panel-heading'}, '通知'),
       e(
         'div',
         {className: 'panel-body'},
         e(
           'div',
           {className: 'container-fluid'},
-          notifyRow('streamChange'),
-          notifyRow('participantActivities'),
+          notifyRow('streamChange', '流改变'),
+          notifyRow('participantActivities', '参与者活动'),
         ),
       )
     );
@@ -972,19 +972,19 @@ class RoomModal extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Transcoding'),
+      e('div', {className: 'panel-heading'}, '转码'),
       e(
         'div',
         {className: 'panel-body'},
         e(
           'div',
           {className: 'container-fluid'},
-          transcodingRow('audio', 'Audio Format'),
-          transcodingRow('video.format', 'Video Format'),
-          transcodingRow('video.parameters.resolution', 'Video Resolution'),
-          transcodingRow('video.parameters.framerate', 'Video Framerate'),
-          transcodingRow('video.parameters.bitrate', 'Video Bitrate'),
-          transcodingRow('video.parameters.keyFrameInterval', 'Video KeyFrameInterval'),
+          transcodingRow('audio', '音频格式'),
+          transcodingRow('video.format', '视频格式'),
+          transcodingRow('video.parameters.resolution', '视频分辨率'),
+          transcodingRow('video.parameters.framerate', '视频帧率'),
+          transcodingRow('video.parameters.bitrate', '视频码率'),
+          transcodingRow('video.parameters.keyFrameInterval', '视频关键帧间隔'),
         ),
       )
     );
@@ -994,7 +994,7 @@ class RoomModal extends React.Component {
     return e(
       'div',
       {className: 'panel panel-default'},
-      e('div', {className: 'panel-heading'}, 'Forwarding'),
+      e('div', {className: 'panel-heading'}, '转发'),
       e(
         'div',
         {className: 'panel-body'},
@@ -1013,7 +1013,7 @@ class RoomModal extends React.Component {
               checked: this.state.room.selectActiveAudio
             }
           ),
-          'selectActiveAudio',
+          '选择活动音频',
         ),
       ),
     );
@@ -1038,11 +1038,11 @@ class RoomModal extends React.Component {
               type: 'button',
               className: 'close',
               'data-dismiss': 'modal',
-              'aria-label': 'Close'
+              'aria-label': '关闭'
             },
             e('span', {'aria-hidden': true}, 'x')
           ),
-          e('h4', {className: 'modal-title'}, 'Room: ' + this.state.room._id)
+          e('h4', {className: 'modal-title'}, '房间: ' + this.state.room._id)
         ),
         e(
           'div',
@@ -1122,7 +1122,7 @@ class RoomApp extends React.Component {
     this.setState({ loading: true });
     restApi.getRooms(state.page, state.pageSize, (err, resp) => {
       if (err) {
-        return notify('error', 'Failed to get rooms', err);
+        return notify('error', '获取所有房间失败', err);
       }
       let ret = JSON.parse(resp);
       this.pagination = state;
@@ -1188,7 +1188,7 @@ class RoomApp extends React.Component {
             );
           }
         },
-        'Detail'
+        '详情'
       ),
       e(
         'button',
@@ -1198,24 +1198,24 @@ class RoomApp extends React.Component {
           onClick: ()=>{
             restApi.updateRoom(opRoom._id, opRoom, (err, resp) => {
               if (err) {
-                return notify('error', 'Update Room', resp);
+                return notify('error', '更新房间', resp);
               }
-              notify('info', 'Update Room Success', opRoom._id);
+              notify('info', '更新房间成功', opRoom._id);
               this.fetchData(this.pagination);
             });
           }
         },
-        'Apply'
+        '应用'
       ),
       e(
         'button',
         {
           className: 'btn btn-sm btn-warning',
           onClick: ()=>{
-            notifyConfirm('Delete', 'Are you sure want to delete room ' + opRoom._id, ()=>{
+            notifyConfirm('删除', '是否删除房间 ' + opRoom._id, ()=>{
               restApi.deleteRoom(opRoom._id, (err, resp) => {
                 if (err) {
-                  return notify('error', 'Delete Room', resp);
+                  return notify('error', '删除房间', resp);
                 }
                 this.roomCount--;
                 this.fetchData(this.pagination);
@@ -1223,7 +1223,7 @@ class RoomApp extends React.Component {
             });
           }
         },
-        'Remove'
+        '删除'
       )
     );
   }
@@ -1236,23 +1236,23 @@ class RoomApp extends React.Component {
         accessor: '_id'
       },
       {
-        Header: 'Name',
+        Header: '名称',
         accessor: 'name',
         Cell: this.renderEditable
       },
       {
-        Header: 'Input Limit',
+        Header: '最大输入源数',
         accessor: 'inputLimit',
         Cell: this.renderEditable
       },
       {
-        Header: 'Participant Limit',
+        Header: '最大参与者数',
         accessor: 'participantLimit',
         Cell: this.renderEditable
       },
       {
         id: 'views.length',
-        Header: 'View Count',
+        Header: '视图数',
         accessor: d => d.views ? d.views.length : 0
       },
       {
@@ -1262,18 +1262,18 @@ class RoomApp extends React.Component {
             className: 'btn btn-sm',
             onClick: (e)=>{
               e.stopPropagation();
-              restApi.createRoom({name: 'NewRoom'}, (err, resp) => {
+              restApi.createRoom({name: '新建房间'}, (err, resp) => {
                 if (err) {
-                  return notify('error', 'Add Room Failed', resp);
+                  return notify('error', '添加房间失败', resp);
                 }
                 let createdRoom = JSON.parse(resp);
-                notify('info', 'Add Room Success', createdRoom._id);
+                notify('info', '添加房间成功', createdRoom._id);
                 this.roomCount++;
                 this.fetchData(this.pagination);
               });
             }
           },
-          'Create New Room'
+          '新建房间'
         ),
         Cell: this.renderOperation
       }
@@ -1283,7 +1283,7 @@ class RoomApp extends React.Component {
     const onFetchData = this.fetchData;
 
     return e('div', {},
-      e('h1', {className: 'page-header'}, 'Rooms in current Service'),
+      e('h1', {className: 'page-header'}, '所有房间'),
       e(
         ReactTable,
         {

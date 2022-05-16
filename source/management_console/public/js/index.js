@@ -24,7 +24,7 @@ function checkProfile(callback) {
       $('#myModal').modal('show');
       return;
     } else if (err) {
-      notify('error', 'Failed to get service information', err);
+      notify('error', '获取服务信息失败', err);
       return;
     } else {
       var myService = JSON.parse(text);
@@ -38,10 +38,12 @@ function checkProfile(callback) {
 }
 
 $('button#clearCookie').click(function() {
+  document.cookie = 'serviceId=; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+  document.cookie = 'serviceKey=; expires=Thu, 01 Jan 1970 00:00:00 UTC';
   restApi = ManagementApi.init();
   restApi.logout(function(err) {
     if (err) {
-      notify('error', 'Failed to logout', err);
+      notify('error', '退出失败', err);
       return;
     }
   });
@@ -52,11 +54,16 @@ $('button#clearCookie').click(function() {
 $('button#saveServiceInfo').click(function() {
   serviceId = $('.modal-body #inputId').val();
   serviceKey = $('.modal-body #inputKey').val();
+  var rememberMe = $('.modal-body .checkbox input').prop('checked');
   if (serviceId !== '' && serviceKey !== '') {
+    if (rememberMe) {
+      setCookie('serviceId', serviceId, 365);
+      setCookie('serviceKey', serviceKey, 365);
+    }
     restApi = ManagementApi.init();
     restApi.login(serviceId, serviceKey, function(err) {
       if (err) {
-        notify('error', 'Failed to login', err);
+        notify('error', '登录失败', err);
         return;
       }
       document.getElementById("inputKey").value = "";
@@ -79,7 +86,7 @@ function judgePermissions(flag) {
       $(".overview").hide();
       $(".room").show();
       $(".runtime").hide();
-      $(".page-header").text("Rooms in current Service");
+      $(".page-header").text("所有房间");
       mode = ENUMERATE.ROOM;
     }
   });
@@ -99,15 +106,15 @@ function a_click(nowList, dom) {
   }
   switch (nowList) {
     case ENUMERATE.SERVICE:
-      title.text("Services");
+      title.text("所有服务");
       checkProfile(renderService);
       break;
     case ENUMERATE.ROOM:
-      title.text("Rooms in current Service");
+      title.text("所有房间");
       checkProfile(renderRoom);
       break;
     case ENUMERATE.RUNTIME:
-      title.text("MCU runtime");
+      title.text("MCU 运行");
       checkProfile(renderCluster);
       break;
   }

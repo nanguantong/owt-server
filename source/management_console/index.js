@@ -89,7 +89,7 @@ var isAllowed = function (path) {
 app.post('/login', function(req, res) {
   req.session.serviceid = req.body.id;
   req.session.servicekey = req.body.key;
-  res.status(200).send('Successfully logged in');
+  res.status(200).send('登录成功');
 });
 
 app.get('/login', function(req, res) {
@@ -110,13 +110,13 @@ app.get('/login', function(req, res) {
       req.url = '/services/' + req.session.serviceid;
       proxy.web(req, res, {target: apiHost});
     } else {
-      res.status(401).send('No session existed');
+      res.status(401).send('会话不存在');
     }
 });
 
 app.get('/logout', function(req, res) {
   req.session.destroy(function(err) {
-    res.clearCookie('secretname', {path: '/'}).status(200).send('Successfully logged out');
+    res.clearCookie('secretname', {path: '/'}).status(200).send('退出成功');
   });
 })
 
@@ -140,10 +140,10 @@ app.use(function (req, res) {
       req.headers.authorization = header;
       proxy.web(req, res, {target: apiHost});
     } catch (e) {
-      res.status(400).send('Invalid path');
+      res.status(400).send('登录无效，请重新登录');
     }
   } else {
-    res.status(404).send('Resource not found');
+    res.status(404).send('找不到资源');
   }
 });
 
