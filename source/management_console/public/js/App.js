@@ -912,7 +912,6 @@ class RoomModal extends React.Component {
                 checked: value
               }
             ),
-            name
           )
         ),
       );
