@@ -869,7 +869,7 @@ void video_send(struct video *v, uint8_t *data, size_t len)
 	struct vtx *vtx = NULL;
 	int err, pl_pos, pl_len;
 
-        if (!v) {
+    if (!v) {
 		/*warning("video_send: v == NULL.\n");*/
 		goto out;
 	}
@@ -879,30 +879,30 @@ void video_send(struct video *v, uint8_t *data, size_t len)
 		goto out;
 	}
 
-        err = pre_decode_rtpheader(&hdr, data, len);
-        if (err) {
-    		warning("video_send: rtp_hdr_decode failed: err=%d.\n", err);
-    		goto out;
-    	}
-    
-    	vtx = &v->vtx;
-        vtx->mb->pos = vtx->mb->end = STREAM_PRESZ;
-        pl_pos = hdr.ext ? RTP_HEADER_SIZE + 4 * hdr.cc + 4 + hdr.x.len : RTP_HEADER_SIZE + 4 * hdr.cc;
-        pl_len = len - pl_pos;
-    
-        err = mbuf_write_mem(vtx->mb, data + pl_pos , pl_len);
-    	if (err) {
-    		warning("video_send: mbuf_write_mem failed.\n");
-    		goto out;
-    	}
-    
-        vtx->mb->pos = STREAM_PRESZ;
-        vtx->mb->end = STREAM_PRESZ + pl_len;
-        err = stream_send(v->strm, hdr.m, -1, hdr.ts, vtx->mb);
-        if (err){
-        	warning("video_send: stream_send failed.\n");
-        	goto out;
-        }
+	err = pre_decode_rtpheader(&hdr, data, len);
+	if (err) {
+		warning("video_send: rtp_hdr_decode failed: err=%d.\n", err);
+		goto out;
+	}
+
+	vtx = &v->vtx;
+	vtx->mb->pos = vtx->mb->end = STREAM_PRESZ;
+	pl_pos = hdr.ext ? RTP_HEADER_SIZE + 4 * hdr.cc + 4 + hdr.x.len : RTP_HEADER_SIZE + 4 * hdr.cc;
+	pl_len = len - pl_pos;
+
+	err = mbuf_write_mem(vtx->mb, data + pl_pos , pl_len);
+	if (err) {
+		warning("video_send: mbuf_write_mem failed.\n");
+		goto out;
+	}
+
+	vtx->mb->pos = STREAM_PRESZ;
+	vtx->mb->end = STREAM_PRESZ + pl_len;
+	err = stream_send(v->strm, hdr.m, -1, hdr.ts, vtx->mb);
+	if (err){
+		warning("video_send: stream_send failed.\n");
+		goto out;
+	}
 
  out:
     return;

@@ -732,7 +732,6 @@ int call_answer(struct call *call, uint16_t scode)
 	info("answering call from %s with %u\n", call->peer_uri, scode);
 
 	if (call->got_offer) {
-
 		err = update_media(call);
 		if (err)
 			return err;

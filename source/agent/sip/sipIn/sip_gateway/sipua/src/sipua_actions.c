@@ -93,7 +93,7 @@ void sipua_cmd_handler(int id, void *data, void *arg)
 		    sipua_do_call(data, arg);
 		    break;
 		case SIPUA_HANGUP:
-                    sipua_do_hangup(data, arg);
+            sipua_do_hangup(data, arg);
 		    break;
 		case SIPUA_ANSWER:
 		    sipua_do_answer(data, arg);
