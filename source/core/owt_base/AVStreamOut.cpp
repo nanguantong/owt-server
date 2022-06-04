@@ -232,9 +232,9 @@ void AVStreamOut::sendLoop()
                 , m_hasAudio, m_audioFormat != FRAME_FORMAT_UNKNOWN, m_hasVideo, m_videoFormat != FRAME_FORMAT_UNKNOWN, timeOut);
     }
 
-     connectRetry = getReconnectCount();
+    connectRetry = getReconnectCount();
 reconnect:
-    if(!connect()) {
+    if (!connect()) {
         notifyAsyncEvent("init", "Cannot open connection");
         goto exit;
     }
@@ -278,7 +278,7 @@ reconnect:
                 break;
             }
         } else {
-            //connectRetry = getReconnectCount();
+            connectRetry = getReconnectCount();
         }
     }
     av_write_trailer(m_context);

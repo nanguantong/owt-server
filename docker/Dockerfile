@@ -17,7 +17,7 @@ ARG NICE_REPO=http://nice.freedesktop.org/releases/libnice-${NICE_VER}.tar.gz
 ARG LIBNICE_PATCH_VER="5.0"
 ARG LIBNICE_PATCH_REPO=https://github.com/open-webrtc-toolkit/owt-server/archive/v${LIBNICE_PATCH_VER}.tar.gz
 
-RUN apt-get update && apt-get install -y -q --no-install-recommends libglib2.0-dev curl
+RUN apt-get update && apt-get install -y -q --no-install-recommends libglib2.0-dev
 
 RUN wget -O - ${NICE_REPO} | tar xz && \
     cd libnice-${NICE_VER} && \
@@ -46,15 +46,13 @@ RUN wget -O - ${OPENSSL_REPO} | tar xz && \
 
 
 # Build libre
-ARG LIBRE_VER="v0.5.0"
-ARG LIBRE_REPO=https://github.com/creytiv/re.git
-#ARG LIBRE_VER="v2.3.0"
-#ARG LIBRE_REPO=https://github.com/baresip/re.git USE_OPENSSL="/usr/local/ssl/" 
+ARG LIBRE_VER="v2.4.0"
+ARG LIBRE_REPO=https://github.com/baresip/re.git
 
 RUN git clone ${LIBRE_REPO} && \
     cd re && \
     git checkout ${LIBRE_VER} && \
-    make SYSROOT_ALT="/usr" RELEASE=1 && \
+    make SYSROOT_ALT="/usr" RELEASE=1 -e OPENSSL_OPT=/usr/local/ssl && \
     make install SYSROOT_ALT="/usr" RELEASE=1 PREFIX="/usr"
 
 
@@ -77,7 +75,7 @@ RUN wget -O - ${USRSCTP_URL} | tar xz && \
 ARG SRTP2_VER="2.4.2"
 ARG SRTP2_REPO=https://codeload.github.com/cisco/libsrtp/tar.gz/v${SRTP2_VER}
 
-#RUN apt-get update && apt-get install -y -q --no-install-recommends curl
+RUN apt-get update && apt-get install -y -q --no-install-recommends curl
 
 RUN curl -o libsrtp-${SRTP2_VER}.tar.gz ${SRTP2_REPO} && \
     tar xzf libsrtp-${SRTP2_VER}.tar.gz && \
@@ -119,7 +117,7 @@ RUN wget -c ${FFMPEG_SRC_URL} && tar xf ${FFMPEG_SRC} && mv ${FFMPEG_DIR} FFmpeg
 
 
 # Install node
-ARG NODE_VER=v14.19.0
+ARG NODE_VER=v16.15.0
 ARG NODE_REPO=https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-x64.tar.xz
 
 RUN wget ${NODE_REPO} && \
@@ -173,8 +171,8 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends python libgl
 # 1. Clone OWT server source code 
 # 2. Clone licode source code and patch
 # 3. Clone webrtc source code and patch
-RUN git config --global user.email "zww0602jsj@gmail.com" && \
-    git config --global user.name "nanguantong" && \
+RUN git config --global user.email "you@example.com" && \
+    git config --global user.name "Your Name" && \
     git clone --depth=1 -b ${OWT_BRANCH} ${OWTSERVER_REPO} && \
 
     # Install node modules for owt
@@ -214,7 +212,7 @@ RUN mkdir ${SERVER_PATH}/third_party/webrtc-m88 && \
     /bin/bash ${SERVER_PATH}/scripts/installWebrtc.sh
 
 # Get js client sdk for owt
-RUN cd /home && git clone --depth=1 -b master ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm config set registry https://registry.npm.taobao.org && npm install && grunt && \
+RUN cd /home && git clone --depth=1 -b ${OWT_BRANCH} ${OWT_SDK_REPO} && cd owt-client-javascript/scripts && npm config set registry https://registry.npm.taobao.org && npm install && grunt && \
     mkdir ${SERVER_PATH}/third_party/quic-lib && \
     export LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu && \
     cd ${SERVER_PATH}/third_party/quic-lib && wget https://github.com/open-webrtc-toolkit/owt-deps-quic/releases/download/v0.1/dist.tgz && tar xzf dist.tgz && \
@@ -231,7 +229,7 @@ WORKDIR /home
 
 # Prerequisites
 # Install node
-ARG NODE_VER=v14.19.0
+ARG NODE_VER=v16.15.0
 ARG NODE_REPO=https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-linux-x64.tar.xz
 
 RUN apt-get update && apt-get install -y -q --no-install-recommends ca-certificates wget xz-utils rabbitmq-server mongodb libboost-system-dev libboost-thread-dev liblog4cxx-dev libglib2.0-0 libfreetype6-dev curl sudo
