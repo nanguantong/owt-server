@@ -54,7 +54,7 @@
       '<!@(pkg-config --libs libavutil)',
       '<!@(pkg-config --libs libavcodec)',
       '<!@(pkg-config --libs libavformat)',
-      '<!@(pkg-config --libs libfdk-aac)',
+      '<!@(pkg-config --libs fdk-aac)',
     ],
   }]
 }
