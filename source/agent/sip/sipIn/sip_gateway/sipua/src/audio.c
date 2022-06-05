@@ -395,7 +395,7 @@ static void check_telev(struct audio *a, struct autx *tx)
 		return;
 
 	tx->mb->pos = STREAM_PRESZ;
-	err = stream_send(a->strm, marker, fmt->pt, tx->ts_tel, tx->mb);
+	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, tx->mb);
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
@@ -839,7 +839,7 @@ void audio_send(struct audio *a, uint8_t *data, size_t len)
 	
 	tx->mb->pos = STREAM_PRESZ;
 	tx->mb->end = STREAM_PRESZ + pl_len;
-	err = stream_send(a->strm, hdr.m, -1, hdr.ts, tx->mb);
+	err = stream_send(a->strm, hdr.ext, hdr.m, -1, hdr.ts, tx->mb);
 	if (err){
 		warning("audio_send: stream_send failed.\n");
 		goto out;

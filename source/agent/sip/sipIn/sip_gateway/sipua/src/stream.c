@@ -370,7 +370,7 @@ static void stream_start_keepalive(struct stream *s)
 }
 
 
-int stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
+int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		struct mbuf *mb)
 {
 	int err = 0;
@@ -391,7 +391,7 @@ int stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
 
 	if (pt >= 0) {
 		err = rtp_send(s->rtp, sdp_media_raddr(s->sdp),
-			       marker, pt, ts, mb);
+			       ext, marker, pt, ts, mb);
 		if (err)
 			s->metric_tx.n_err++;
 	}

@@ -79,7 +79,7 @@ struct vtx {
 	struct video *video;               /**< Parent                    */
 	const struct vidcodec *vc;         /**< Current Video encoder     */
 	struct vidframe *frame;            /**< Source frame              */
-        struct mbuf *mb;                   /**< Packetization buffer      */
+	struct mbuf *mb;                   /**< Packetization buffer      */
 	// TODO struct list sendq;                 /**< Tx-Queue (struct vidqent) */
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
 	int muted_frames;                  /**< # of muted frames sent    */
@@ -136,6 +136,7 @@ struct video {
 struct vidqent {
 	struct le le;
 	struct sa dst;
+	bool ext;
 	bool marker;
 	uint8_t pt;
 	uint32_t ts;
@@ -167,6 +168,7 @@ static int vidqent_alloc(struct vidqent **qentp,
 	if (!qent)
 		return ENOMEM;
 
+	qent->ext    = false;
 	qent->marker = marker;
 	qent->pt     = pt;
 	qent->ts     = ts;
@@ -204,10 +206,9 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 	if (!vtx)
 		return;
 
-
 	le = vtx->sendq.head;
 	if (!le)
-                return;
+        return;
 
 	/*
 	 * time [ms] * bitrate [kbps] / 8 = bytes
@@ -224,7 +225,7 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 
 		sent += mbuf_get_left(qent->mb);
 
-		stream_send(vtx->video->strm, qent->marker, qent->pt,
+		stream_send(vtx->video->strm, qent->ext, qent->marker, qent->pt,
 			    qent->ts, qent->mb);
 
 		le = le->next;
@@ -898,7 +899,7 @@ void video_send(struct video *v, uint8_t *data, size_t len)
 
 	vtx->mb->pos = STREAM_PRESZ;
 	vtx->mb->end = STREAM_PRESZ + pl_len;
-	err = stream_send(v->strm, hdr.m, -1, hdr.ts, vtx->mb);
+	err = stream_send(v->strm, hdr.ext, hdr.m, -1, hdr.ts, vtx->mb);
 	if (err){
 		warning("video_send: stream_send failed.\n");
 		goto out;
