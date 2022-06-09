@@ -41,8 +41,8 @@ static struct config core_config = {
 	{
 		128,
 		"",
-                "",
-                ""
+		"",
+		""
 	},
 
 	/** Audio */
@@ -63,6 +63,7 @@ static struct config core_config = {
 	/** Audio/Video Transport */
 	{
 		0xb8,
+		0x88,
 		{10000, 20000},
 		{512000, 2048000},
 		true,
@@ -73,6 +74,7 @@ static struct config core_config = {
 
 	/* Network */
 	{
+		AF_INET,
 		""
 	},
 
@@ -88,6 +90,23 @@ static struct config core_config = {
 struct config *conf_config(void)
 {
 	return &core_config;
+}
+
+
+void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable)
+{
+	if (!mask)
+		return;
+
+	if (enable)
+		*mask |=  (1u << bit);
+	else
+		*mask &= ~(1u << bit);
+}
+
+bool u32mask_enabled(uint32_t mask, uint8_t bit)
+{
+	return 0 != (mask & (1u << bit));
 }
 
 

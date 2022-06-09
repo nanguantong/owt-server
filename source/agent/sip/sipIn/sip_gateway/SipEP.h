@@ -39,8 +39,10 @@ public:
     SipEP(SipEPOwner* owner);
     virtual ~SipEP();
 
+    void init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat);
     bool sipRegister(const std::string& sipServerAddr, const std::string& userName,
-                     const std::string& password, const std::string& displayName);
+                     const std::string& password, const std::string& displayName,
+                     const std::string& transport);
     bool makeCall(const std::string& calleeURI, bool requireAudio, bool requireVideo);
     void hangup(const std::string& peer, void *call);
     bool accept(const std::string& peer);

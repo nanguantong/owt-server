@@ -644,6 +644,15 @@ class RoomModal extends React.Component {
     }
   }
 
+  onSipUpdate = (path, value) => {
+    let newRoom = _.cloneDeep(this.state.room);
+    if (!newRoom.sip) {
+      newRoom.sip = {sipServer: '', username: '', password: '', transport: ''};
+    }
+    newRoom.sip[path] = value;
+    this.setState({room: newRoom});
+  };
+
   handleChange(e) {
     // validate
     this.props.onRoomUpdate(this.props.index, this.state.room);
@@ -834,33 +843,40 @@ class RoomModal extends React.Component {
 
   renderSip() {
     const room = this.state.room;
-    const sipRow = (path, name) => {
-      const value = _.get(this.state.room.sip, path, '');
-      return e(
-        'div',
-        {className: 'row form-group'},
-        e('div', {className: 'col-sm-3'}, e('label', {}, name)),
-        e(
-          'div',
-          {className: 'col-sm-3'},
-          e('input',
-            {
-              type: (path === 'password') ? 'password' : 'text',
-              value,
-              className: 'form-control',
-              onChange: (e) => {
-                let newRoom = _.cloneDeep(this.state.room);
-                if (!newRoom.sip) {
-                  newRoom.sip = {sipServer: '', username: '', password: ''};
-                }
-                newRoom.sip[path] = e.target.value;
-                this.setState({room: newRoom});
-              },
-            },
-          )
-        ),
+
+    const sipRow = (label, child) => e(
+      'div',
+      {className: 'row form-group'},
+      e('div', {className: 'col-sm-3'}, e('label', {}, label)),
+      e('div', {className: 'col-sm-3'}, child),
+    );
+    const sipInput = (type, path, dValue) => {
+      const value = _.get(this.state.room.sip, path, dValue);
+      return e('input',
+        {
+          type: type,
+          value,
+          className: 'form-control',
+          onChange: (e) => {
+            this.onSipUpdate(path, e.target.value);
+          },
+        },
       );
     };
+    const sipSelect = (options, path) => e(
+      'select',
+      {
+        value: _.get(room.sip, path, options[0]),
+        onChange: (e) => {
+          const val = e.target.value;
+          this.onSipUpdate(path, val);
+        },
+        className: 'form-control col-sm-3'
+      },
+      options.map((v, i) => {
+        return e('option', {key: i, value: v}, v);
+      })
+    );
 
     return e(
       'div',
@@ -872,9 +888,15 @@ class RoomModal extends React.Component {
         e(
           'div',
           {className: 'container-fluid'},
-          sipRow('sipServer', 'sip服务'),
-          sipRow('username', '用户名'),
-          sipRow('password', '密码'),
+
+          sipRow('sip服务',
+            sipInput('text', 'sipServer', '')),
+          sipRow('用户名',
+            sipInput('text', 'username', '')),
+          sipRow('密码',
+            sipInput('password', 'password', '')),
+          sipRow('信令传输协议',
+            sipSelect(['udp', 'tcp', 'tls'], 'transport'))
         ),
       )
     );

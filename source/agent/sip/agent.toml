@@ -36,3 +36,18 @@ ip_address = "" #default: ""
 maxport = 0 #default: 0
 minport = 0 #default: 0
 
+
+#########################################################################################
+[sip]
+# The sip port range
+maxport = 0 #default: 0
+minport = 0 #default: 0
+
+# If or not prefer ipv6
+prefer_ipv6 = false #default: false
+
+# Rtp timeout
+rtp_timeout = 0 #default: 0
+
+# Media traversal: stun / turn / ice
+mnat = ""

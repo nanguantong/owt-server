@@ -27,9 +27,7 @@ static pthread_t dnsc_thid;
 /**************** sipua  management ***************/
 
 static sipua_bool sipua_prefer_ipv6 = false;
-static sipua_bool sipua_trans_udp = true;
-static sipua_bool sipua_trans_tcp = false;
-static sipua_bool sipua_trans_tls = false;
+static char sipua_mnat[16];
 
 static struct list sipual;               /**< List of SIP UAs(struct ua_entity) */
 
@@ -41,6 +39,8 @@ struct new_sipua_th_paras{
 	char user_name[64];
 	char password[64];
 	char disp_name[64];
+
+	uint32_t transports;           /**< Supported transports mask       */
 };
 
 struct new_sipua_rslt{
@@ -49,16 +49,28 @@ struct new_sipua_rslt{
 };
 
 /**/
-static int construct_uag(struct uag **uagp, void *ep, const char *sip_server, const char *user_name,
-	                     const char *password, const char *disp_name)
+static int construct_uag(struct uag **uagp, struct new_sipua_th_paras *params)
 {
 	int err;
 	char account_str[512]={0};
+	bool use_udp, use_tcp, use_tls;
 
-    sprintf(account_str, "%.128s <sip:%.128s:%.64s@%.128s>\n", disp_name, user_name, password, sip_server);
+    sprintf(account_str, "%.128s <sip:%.128s:%.64s@%.128s>;medianat=%.16s\n", params->disp_name, params->user_name, params->password, params->sip_server, sipua_mnat);
 
-	err = uag_alloc(uagp, "Nanuns SIPUA", ep, sipua_trans_udp ? true : false, sipua_trans_tcp ? true : false, sipua_trans_tls ? true : false, sipua_prefer_ipv6 ? true : false);
-	if (err){
+	if (u32mask_enabled(params->transports, SIP_TRANSP_UDP)) {
+		use_udp = true;
+	}
+	if (u32mask_enabled(params->transports, SIP_TRANSP_TCP)) {
+		use_tcp = true;
+	}
+#ifdef USE_TLS
+	if (u32mask_enabled(trans_mask, SIP_TRANSP_TLS)) {
+		use_tls = true;
+	}
+#endif
+
+	err = uag_alloc(uagp, "Nanuns SIPUA", params->ep, use_udp, use_tcp, use_tls, sipua_prefer_ipv6);
+	if (err) {
 		*uagp = NULL;
 		goto out;
 	}
@@ -82,7 +94,7 @@ static void *sipua_run(void *arg)
 
 	re_thread_init();
 	fd_setsize(8192);
-	err1 = construct_uag(&rslt.uag, params->ep, params->sip_server, params->user_name, params->password, params->disp_name);
+	err1 = construct_uag(&rslt.uag, params);
 	if (err1) {
 		warning("!!construct_uag failed.\n");
 		write(params->pfd[1], &rslt, sizeof(struct new_sipua_rslt));
@@ -149,14 +161,33 @@ static void dnsc_delete(void)
 	pthread_join(dnsc_thid, NULL);
 }
 
-int sipua_new(struct sipua_entity **sipuap, void *endpoint, const char *sip_server, const char * user_name,
-	          const char *password, const char *disp_name)
+void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, uint32_t rtp_timeout, const char *mnat)
+{
+	struct config *cfg = conf_config();
+
+	sipua_prefer_ipv6 = prefer_ipv6;
+	if (str_isset(mnat)) {
+		strncpy(sipua_mnat, mnat, sizeof(sipua_mnat) - 1);
+	}
+
+#if HAVE_INET6
+	cfg->net.af   = prefer_ipv6 ? AF_INET6 : AF_INET;
+#else
+	cfg->net.af   = AF_INET;
+#endif
+	cfg->avt.rtp_ports.min = rtp_port_min > 0 ? rtp_port_min : cfg->avt.rtp_ports.min;
+	cfg->avt.rtp_ports.max = rtp_port_max > 0 ? rtp_port_max : cfg->avt.rtp_ports.max;
+	cfg->avt.rtp_timeout = rtp_timeout >= 0 ? rtp_timeout : cfg->avt.rtp_timeout;
+}
+
+int sipua_new(struct sipua_entity **sipuap, void *endpoint, const char *sip_server, const char *user_name,
+	          const char *password, const char *disp_name, const char *transport)
 {
     struct sipua_entity *sipua = NULL;
 	pthread_t            thread;
-    int                  err = 0, n = 0;
-    struct new_sipua_th_paras  params = {{-1, -1}, NULL, {0}, {0}, {0}, {0}};
-    struct new_sipua_rslt      rslt = {NULL, NULL};
+	int                  err = 0, n = 0;
+	struct new_sipua_th_paras  params = {{-1, -1}, NULL, {0}, {0}, {0}, {0}};
+	struct new_sipua_rslt      rslt = {NULL, NULL};
 
     if (!endpoint) {
     	err = -1;
@@ -165,16 +196,20 @@ int sipua_new(struct sipua_entity **sipuap, void *endpoint, const char *sip_serv
 
     sipua = mem_zalloc(sizeof(struct sipua_entity), sipua_destructor);
 
-    if (sipua == NULL || pipe(params.pfd) < 0){
+    if (sipua == NULL || pipe(params.pfd) < 0) {
     	goto out;
     }
 
     params.ep = endpoint;
     /*memcpy((void *)&params.cfg, (void *)cfg, sizeof(struct uag_cfg));*/
-    strncpy(params.sip_server, sip_server, 127);
-    strncpy(params.user_name, user_name, 63);
-    strncpy(params.password, password, 63);
-    strncpy(params.disp_name, disp_name, 63);
+    strncpy(params.sip_server, sip_server, sizeof(params.sip_server) - 1);
+    strncpy(params.user_name, user_name, sizeof(params.user_name) - 1);
+    strncpy(params.password, password, sizeof(params.password) - 1);
+    strncpy(params.disp_name, disp_name, sizeof(params.disp_name) - 1);
+
+	u32mask_enable(&params.transports, SIP_TRANSP_UDP, !str_cmp(transport, "udp"));
+	u32mask_enable(&params.transports, SIP_TRANSP_TCP, !str_cmp(transport, "tcp"));
+	u32mask_enable(&params.transports, SIP_TRANSP_TLS, !str_cmp(transport, "tls"));
 
 	pthread_create(&thread, NULL, sipua_run, (void *)&params);
 	n = read(params.pfd[0], &rslt, sizeof(struct new_sipua_rslt));
@@ -305,8 +340,8 @@ void sipua_accept(struct sipua_entity *sipua, const char* peer)
 
 void sipua_set_call_owner(struct sipua_entity *sipua, void *call, void *callowner)
 {
-       struct sipua_call_connect * data = NULL;
-       //FIX ME, lock
+	struct sipua_call_connect * data = NULL;
+	//FIX ME, lock
 	if (!sipua || !sipua->mq) {
 		warning("sipua entity NULL!\n");
 		return;
@@ -315,11 +350,11 @@ void sipua_set_call_owner(struct sipua_entity *sipua, void *call, void *callowne
 	data->call = call;
 	data->owner = callowner;
 
-        if (callowner) {
+    if (callowner) {
 	    mqueue_push(sipua->mq, SIPUA_CALL_CONNECT, data);
-        } else {
+    } else {
 	    mqueue_push(sipua->mq, SIPUA_CALL_DISCONNECT, data);
-        }
+    }
 	return;
 }
 

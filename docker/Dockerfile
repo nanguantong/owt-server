@@ -46,8 +46,8 @@ RUN wget -O - ${OPENSSL_REPO} | tar xz && \
 
 
 # Build libre
-ARG LIBRE_VER="v2.4.0"
-ARG LIBRE_REPO=https://github.com/baresip/re.git
+ARG LIBRE_VER="test"
+ARG LIBRE_REPO=https://github.com/nanguantong/re-nan.git
 
 RUN git clone ${LIBRE_REPO} && \
     cd re && \

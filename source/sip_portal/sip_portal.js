@@ -57,10 +57,10 @@ var api = {
         }
 
         if (update.type === 'create') {
-            createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password);
+            createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password, sipInfo.transport);
         } else if (update.type === 'update') {
             deleteSipConnectivity(room_id);
-            createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password);
+            createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password, sipInfo.transport);
         } else if (update.type === 'delete') {
             deleteSipConnectivity(room_id);
         }
@@ -84,7 +84,7 @@ var rebuildErizo = function(erizo_id) {
 
             var sipInfo = roomInfo[roomId];
             if (sipInfo) {
-                createSipConnectivity(roomId, sipInfo.sipServer, sipInfo.username, sipInfo.password);
+                createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password, sipInfo.transport);
             }
             break;
         }
@@ -123,13 +123,13 @@ function initSipRooms() {
                 var sipInfo = rooms[index].sip;
                 // Save the room sip info
                 roomInfo[room_id] = sipInfo;
-                createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password);
+                createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password, sipInfo.transport);
             }
             log.info('initSipRooms ok');
         });
 }
 
-function createSipConnectivity(room_id, sip_server, sip_user, sip_passwd) {
+function createSipConnectivity(room_id, sip_server, sip_user, sip_passwd, sip_transport) {
     if (!roomPromises[room_id]) roomPromises[room_id] = Promise.resolve(0);
 
     roomPromises[room_id] = roomPromises[room_id].then(() => {
@@ -148,7 +148,8 @@ function createSipConnectivity(room_id, sip_server, sip_user, sip_passwd) {
                         room_id: room_id,
                         sip_server: sip_server,
                         sip_user: sip_user,
-                        sip_passwd: sip_passwd
+                        sip_passwd: sip_passwd,
+                        sip_transport: sip_transport
                     }],
                     function(result) {
                         log.debug("Sip node init successfully.");
@@ -170,7 +171,7 @@ function createSipConnectivity(room_id, sip_server, sip_user, sip_passwd) {
                 setTimeout(resolve, AllocateInterval);
             })
             .then(() => {
-                return createSipConnectivity(room_id, sip_server, sip_user, sip_passwd);
+                return createSipConnectivity(room_id, sip_server, sip_user, sip_passwd, sip_transport);
             });
         });
     });

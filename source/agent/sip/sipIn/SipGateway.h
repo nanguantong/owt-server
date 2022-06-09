@@ -43,10 +43,10 @@ class SipGateway : public NodeEventedObjectWrap {
 
   /*
    * Register to sip server.
-   * Param: register info. 4 arguments.
+   * Param: register info. 5 arguments.
    */
   static void sipReg(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void makeCall(const v8::FunctionCallbackInfo<v8::Value>&  args);
+  static void makeCall(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void hangup(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void accept(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void reject(const v8::FunctionCallbackInfo<v8::Value>& args);

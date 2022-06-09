@@ -27,10 +27,17 @@ SipGateway::~SipGateway()
 }
 
 // The main thread
-bool SipGateway::sipRegister(const std::string& sipServerAddr, const std::string& userName,
-                             const std::string& password, const std::string& displayName)
+void SipGateway::init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat)
 {
-    return m_sipEP->sipRegister(sipServerAddr, userName, password, displayName);
+    return m_sipEP->init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat);
+}
+
+// The main thread
+bool SipGateway::sipRegister(const std::string& sipServerAddr, const std::string& userName,
+                             const std::string& password, const std::string& displayName,
+                             const std::string& transport)
+{
+    return m_sipEP->sipRegister(sipServerAddr, userName, password, displayName, transport);
 }
 
 // The main thread

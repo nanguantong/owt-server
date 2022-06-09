@@ -39,8 +39,32 @@ void SipGateway::New(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
+  bool preferIpv6;
+  uint32_t rtpPortMin = 0, rtpPortMax = 0, rtpTimeout = 0;
+  std::string mnat;
+  if (args.Length() > 0 && args[0]->IsObject()) {
+    Local<String> keyPreferIpv6 = Nan::New("prefer_ipv6").ToLocalChecked();
+    Local<String> keyRtpPortMin = Nan::New("rtp_port_min").ToLocalChecked();
+    Local<String> keyRtpPortMax = Nan::New("rtp_port_max").ToLocalChecked();
+    Local<String> keyRtpTimeout = Nan::New("rtp_timeout").ToLocalChecked();
+    Local<String> keyMnat = Nan::New("mnat").ToLocalChecked();
+
+    Local<Object> options = Nan::To<v8::Object>(args[0]).ToLocalChecked();
+    if (Nan::Has(options, keyPreferIpv6).FromMaybe(false))
+      preferIpv6 = Nan::To<bool>(Nan::Get(options, keyPreferIpv6).ToLocalChecked()).FromJust();
+    if (Nan::Has(options, keyRtpPortMin).FromMaybe(false))
+      rtpPortMin = Nan::To<uint32_t>(Nan::Get(options, keyRtpPortMin).ToLocalChecked()).FromJust();
+    if (Nan::Has(options, keyRtpPortMax).FromMaybe(false))
+      rtpPortMax = Nan::To<uint32_t>(Nan::Get(options, keyRtpPortMax).ToLocalChecked()).FromJust();
+    if (Nan::Has(options, keyRtpTimeout).FromMaybe(false))
+      rtpTimeout = Nan::To<uint32_t>(Nan::Get(options, keyRtpTimeout).ToLocalChecked()).FromJust();
+    if (Nan::Has(options, keyMnat).FromMaybe(false))
+      mnat = getString(Nan::Get(options, keyMnat).ToLocalChecked());
+  }
+
   SipGateway* obj = new SipGateway();
   obj->me = new sip_gateway::SipGateway();
+  obj->me->init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat);
 
   obj->me->setEventRegistry(obj);
   obj->Wrap(args.This());
@@ -118,8 +142,8 @@ void SipGateway::sipReg(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
-  if (args.Length() < 4 || !args[0]->IsString() || !args[1]->IsString() ||
-      !args[2]->IsString() || !args[3]->IsString()) {
+  if (args.Length() < 5 || !args[0]->IsString() || !args[1]->IsString() ||
+      !args[2]->IsString() || !args[3]->IsString() || !args[4]->IsString()) {
     Nan::ThrowError("Wrong arguments");
     return;
   }
@@ -129,10 +153,12 @@ void SipGateway::sipReg(const FunctionCallbackInfo<Value>& args) {
   Nan::Utf8String str1(Nan::To<v8::String>(args[1]).ToLocalChecked());
   Nan::Utf8String str2(Nan::To<v8::String>(args[2]).ToLocalChecked());
   Nan::Utf8String str3(Nan::To<v8::String>(args[3]).ToLocalChecked());
+  Nan::Utf8String str4(Nan::To<v8::String>(args[4]).ToLocalChecked());
   std::string sipServerAddr = std::string(*str0);
   std::string userName = std::string(*str1);
   std::string password = std::string(*str2);
   std::string displayName = std::string(*str3);
-  bool isSuccess = me->sipRegister(sipServerAddr, userName, password, displayName);
+  std::string transport = std::string(*str4);
+  bool isSuccess = me->sipRegister(sipServerAddr, userName, password, displayName, transport);
   args.GetReturnValue().Set(Boolean::New(isolate, isSuccess));
 }

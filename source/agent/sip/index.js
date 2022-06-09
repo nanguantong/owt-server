@@ -586,6 +586,11 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
             return callback('callback', 'error', 'Invalid sip password');
         }
 
+        if (typeof options.sip_transport !== 'string' || options.sip_transport === '') {
+            log.error('Invalid sip transport');
+            return callback('callback', 'error', 'Invalid sip transport');
+        }
+
         options.sip_passwd = (options.sip_passwd ? options.sip_passwd : '');
 
         if (gateway) {
@@ -596,7 +601,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
 
         room_id = options.room_id;
 
-        gateway = new SipGateway.SipGateway();
+        gateway = new SipGateway.SipGateway(global.config.sip);
 
         gateway.addEventListener('SIPRegisterOK', function() {
             callback('callback', 'ok');
@@ -609,7 +614,7 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
             callback('callback', 'error', 'SIP registration fail');
         });
 
-        if (!gateway.register(options.sip_server, options.sip_user, options.sip_passwd, options.sip_user)) {
+        if (!gateway.register(options.sip_server, options.sip_user, options.sip_passwd, options.sip_user, options.sip_transport)) {
             log.error("Register error!");
             gateway.close();
             gateway = undefined;

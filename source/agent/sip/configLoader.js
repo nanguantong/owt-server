@@ -44,6 +44,13 @@ module.exports.load = () => {
       config.internal.ip_address = addr.ip;
     }
 
+    config.sip = config.sip || {};
+    config.sip.minport = config.sip.minport || 0;
+    config.sip.maxport = config.sip.maxport || 0;
+    config.sip.prefer_ipv6 = config.sip.prefer_ipv6 || false;
+    config.sip.rtp_timeout = config.sip.rtp_timeout || 0;
+    config.sip.mnat = config.sip.mnat || '';
+
     return config;
   } catch (e) {
     console.error('Parsing config error on line ' + e.line + ', column ' + e.column + ': ' + e.message);

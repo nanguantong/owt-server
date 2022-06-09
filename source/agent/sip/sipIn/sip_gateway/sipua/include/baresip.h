@@ -206,6 +206,9 @@ int load_modules(void/*const char *modpath*/);
 void unload_modules(void);
 struct config *conf_config(void);
 
+void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable);
+bool u32mask_enabled(uint32_t mask, uint8_t bit);
+
 
 /*
  * Contact

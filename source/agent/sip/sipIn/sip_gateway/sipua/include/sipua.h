@@ -24,8 +24,9 @@ struct call;
 int sipua_mod_init(void/*const char *dlpath*/);
 void sipua_mod_close(void);
 
+void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, uint32_t rtp_timeout, const char *mnat);
 int sipua_new(struct sipua_entity **sipua, void *endpoint, const char *sip_server, const char * user_name,
-	          const char *password, const char *disp_name);
+              const char *password, const char *disp_name, const char *transport);
 void sipua_delete(struct sipua_entity *sipua);
 
 

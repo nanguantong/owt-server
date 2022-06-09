@@ -31,8 +31,14 @@ SipEP::~SipEP()
     }
 }
 
+void SipEP::init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat)
+{
+    sipua_init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat.c_str());
+}
+
 bool SipEP::sipRegister(const std::string& sipServerAddr, const std::string& userName,
-                        const std::string& password, const std::string& displayName)
+                        const std::string& password, const std::string& displayName,
+                        const std::string& transport)
 {
     if (m_state == INITIALISED && !m_sipua) {
         if (sipServerAddr.length() == 0 || userName.length() == 0) {
@@ -40,7 +46,7 @@ bool SipEP::sipRegister(const std::string& sipServerAddr, const std::string& use
             return false;
         }
 
-        if (!sipua_new(&m_sipua, this, sipServerAddr.c_str(), userName.c_str(), password.c_str(), displayName.c_str())) {
+        if (!sipua_new(&m_sipua, this, sipServerAddr.c_str(), userName.c_str(), password.c_str(), displayName.c_str(), transport.c_str())) {
             ELOG_INFO("!!Create sipua OK!\n");
             m_state = REGISTERING;
             return true;
