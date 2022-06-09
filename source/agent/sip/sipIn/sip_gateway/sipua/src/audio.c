@@ -529,7 +529,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 	rx = &a->rx;
 
 	err = stream_alloc(&a->strm, &cfg->avt, call, sdp_sess,
-			   "audio", label,
+			   MEDIA_AUDIO, label,
 			   mnat, mnat_sess, menc, menc_sess,
 			   call_localuri(call),
 			   stream_recv_handler, NULL, a);

@@ -514,7 +514,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	/* Initialise media NAT handling */
 	if (acc->mnat) {
 		err = acc->mnat->sessh(&call->mnats, net_dnsc(), call->af,
-				       acc->stun_host, acc->stun_port,
+				       acc->stun_host,
 				       acc->stun_user, acc->stun_pass,
 				       call->sdp, !got_offer,
 				       mnat_handler, call);
@@ -530,6 +530,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		if (acc->menc->sessh) {
 			err = acc->menc->sessh(&call->mencs, call->sdp,
 						!got_offer,
+						NULL,//menc_event_handler,
 						menc_error_handler, call);
 			if (err) {
 				warning("call: mediaenc session: %m\n", err);

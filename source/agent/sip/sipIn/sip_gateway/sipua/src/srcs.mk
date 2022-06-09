@@ -20,6 +20,7 @@ SRCS	+= rtpkeep.c
 SRCS	+= sdp.c
 SRCS	+= sipreq.c
 SRCS	+= stream.c
+SRCS	+= stunuri.c
 SRCS	+= ua.c
 SRCS    += uag.c
 SRCS    += sipua.c

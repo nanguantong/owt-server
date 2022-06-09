@@ -16,6 +16,8 @@
 
 enum {
 	RTP_RECV_SIZE = 8192,
+	RTP_CHECK_INTERVAL = 1000,  /* how often to check for RTP [ms] */
+	PORT_DISCARD = 9,
 };
 
 
@@ -55,8 +57,8 @@ static void print_rtp_stats(const struct stream *s)
 	     ,
 	     sdp_media_name(s->sdp),
 	     s->metric_tx.n_packets, s->metric_rx.n_packets,
-	     1.0*metric_avg_bitrate(&s->metric_tx)/1000,
-	     1.0*metric_avg_bitrate(&s->metric_rx)/1000,
+	     1.0*metric_avg_bitrate(&s->metric_tx)/1000.0,
+	     1.0*metric_avg_bitrate(&s->metric_rx)/1000.0,
 	     s->metric_tx.n_err, s->metric_rx.n_err
 	     );
 
@@ -92,6 +94,17 @@ static void stream_destructor(void *arg)
 	mem_deref(s->jbuf);
 	mem_deref(s->rtp);
 	mem_deref(s->cname);
+}
+
+
+static const char *media_name(enum media_type type)
+{
+	switch (type) {
+
+	case MEDIA_AUDIO: return "audio";
+	case MEDIA_VIDEO: return "video";
+	default:          return "???";
+	}
 }
 
 
@@ -132,13 +145,15 @@ static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
 
 		err = jbuf_put(s->jbuf, hdr, mb);
 		if (err) {
-			info("%s: dropping %u bytes from %J (%m)\n",
+			info("stream: %s: dropping %u bytes from %J"
+			     " [seq=%u, ts=%u] (%m)\n",
 			     sdp_media_name(s->sdp), mb->end,
-			     src, err);
+			     src, hdr->seq, hdr->ts, err);
 			s->metric_rx.n_err++;
 		}
 
-		if (jbuf_get(s->jbuf, &hdr2, &mb2)) {
+		err = jbuf_get(s->jbuf, &hdr2, &mb2);
+		if (err) {
 
 			if (!s->jbuf_started)
 				return;
@@ -199,16 +214,22 @@ static int stream_sock_alloc(struct stream *s, int af)
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
 			 s->rtcp, rtp_recv, rtcp_handler, s);
-	if (err)
+	if (err) {
+		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
+			" (%m)\n", net_af2name(af),
+			s->cfg.rtp_ports.min, s->cfg.rtp_ports.max, err);
 		return err;
+	}
 
-	tos = s->cfg.rtp_tos;
+	tos = s->type == MEDIA_AUDIO ? s->cfg.rtp_tos : s->cfg.rtpv_tos;
 	(void)udp_setsockopt(rtp_sock(s->rtp), IPPROTO_IP, IP_TOS,
 			     &tos, sizeof(tos));
 	(void)udp_setsockopt(rtcp_sock(s->rtp), IPPROTO_IP, IP_TOS,
 			     &tos, sizeof(tos));
 
 	udp_rxsz_set(rtp_sock(s->rtp), RTP_RECV_SIZE);
+
+	udp_sockbuf_set(rtp_sock(s->rtp), 65536);
 
 	return 0;
 }
@@ -218,7 +239,7 @@ const char sdp_proto_rtpavpf[]  = "RTP/AVPF";   /**< RTP Profile          */
 
 int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 		 struct call *call, struct sdp_session *sdp_sess,
-		 const char *name, int label,
+		 enum media_type type, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 const char *cname,
@@ -235,6 +256,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 		return ENOMEM;
 
 	s->cfg   = *cfg;
+	s->type  = type;
 	s->call  = call;
 	s->rtph  = rtph;
 	s->rtcph = rtcph;
@@ -254,16 +276,17 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 		goto out;
 
 	/* Jitter buffer */
-	if (cfg->jbuf_del.min && cfg->jbuf_del.max) {
+	if (cfg->jbtype != JBUF_OFF && cfg->jbuf_del.max) {
 
-		err = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
-				 cfg->jbuf_del.max);
+		err  = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
+				cfg->jbuf_del.max);
+		err |= jbuf_set_type(s->jbuf, cfg->jbtype);
 		if (err)
 			goto out;
 	}
 
-	err = sdp_media_add(&s->sdp, sdp_sess, name,
-			    sa_port(rtp_local(s->rtp)),
+	err = sdp_media_add(&s->sdp, sdp_sess, media_name(name),
+				s->rtp ? sa_port(rtp_local(s->rtp)) : PORT_DISCARD,
 			    (menc && menc->sdp_proto) ? menc->sdp_proto :
 			    sdp_proto_rtpavpf);
 	if (err)
@@ -314,7 +337,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 				   IPPROTO_UDP,
 				   rtp_sock(s->rtp),
 				   s->rtcp ? rtcp_sock(s->rtp) : NULL,
-				   s->sdp);
+				   s->sdp, s);
 		if (err)
 			goto out;
 	}
@@ -447,7 +470,7 @@ void stream_update(struct stream *s)
 				      IPPROTO_UDP,
 				      rtp_sock(s->rtp),
 				      s->rtcp ? rtcp_sock(s->rtp) : NULL,
-				      s->sdp);
+				      s->sdp, s);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
 		}
@@ -559,6 +582,12 @@ void stream_set_bw(struct stream *s, uint32_t bps)
 		return;
 
 	sdp_media_set_lbandwidth(s->sdp, SDP_BANDWIDTH_AS, bps / 1000);
+}
+
+
+enum media_type stream_type(const struct stream *s)
+{
+	return s ? s->type : (enum media_type)-1;
 }
 
 

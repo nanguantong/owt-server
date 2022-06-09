@@ -60,6 +60,33 @@ int mnat_register(struct mnat **mnatp, const char *id, const char *ftag,
 	return 0;
 }
 
+/**
+ * Register a Media NAT traversal module
+ *
+ * @param mnat     Media NAT traversal module
+ */
+// void mnat_register(struct mnat *mnat)
+// {
+// 	if (!mnat)
+// 		return;
+
+// 	list_append(&mnatl, &mnat->le, mnat);
+
+// 	info("medianat: %s\n", mnat->id);
+// }
+
+/**
+ * Unregister a Media NAT traversal module
+ *
+ * @param mnat     Media NAT traversal module
+ */
+void mnat_unregister(struct mnat *mnat)
+{
+	if (!mnat)
+		return;
+
+	list_unlink(&mnat->le);
+}
 
 /**
  * Find a Media NAT module by name

@@ -63,50 +63,40 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 }
 
 
+/*
+ * Decode STUN parameters, inspired by RFC 7064
+ *
+ * See RFC 3986:
+ *
+ *     Use of the format "user:password" in the userinfo field is
+ *     deprecated.
+ *
+ */
 static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 {
-	struct pl srv;
-	struct uri uri;
+	struct pl srv, tmp;
 	int err;
 
 	if (!acc || !aor)
 		return EINVAL;
 
-	memset(&uri, 0, sizeof(uri));
-
 	if (0 == msg_param_decode(&aor->params, "stunserver", &srv)) {
 
 		info("using stunserver: '%r'\n", &srv);
 
-		err = uri_decode(&uri, &srv);
+		err = stunuri_decode(&acc->stun_host, &srv);
 		if (err) {
-			warning("account: %r: decode failed: %m\n", &srv, err);
-			memset(&uri, 0, sizeof(uri));
-		}
-
-		if (0 != pl_strcasecmp(&uri.scheme, "stun")) {
-			warning("account: unknown scheme: %r\n", &uri.scheme);
-			return EINVAL;
+			warning("account: decode '%r' failed: %m\n", &srv, err);
 		}
 	}
 
 	err = 0;
-	if (pl_isset(&uri.user))
-		err |= pl_strdup(&acc->stun_user, &uri.user);
-	else
-		err |= pl_strdup(&acc->stun_user, &aor->uri.user);
 
-	if (pl_isset(&uri.password))
-		err |= pl_strdup(&acc->stun_pass, &uri.password);
-	else
-		err |= pl_strdup(&acc->stun_pass, &aor->uri.password);
+	if (0 == msg_param_exists(&aor->params, "stunuser", &tmp))
+		err |= param_dstr(&acc->stun_user, &aor->params, "stunuser");
 
-	if (pl_isset(&uri.host))
-		err |= pl_strdup(&acc->stun_host, &uri.host);
-	else
-		err |= pl_strdup(&acc->stun_host, &aor->uri.host);
-
-	acc->stun_port = uri.port;
+	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
+		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
 
 	return err;
 }
@@ -410,6 +400,103 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 
 /**
+ * Set the authentication user for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param user  Authentication username (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_auth_user(struct account *acc, const char *user)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->auth_user = mem_deref(acc->auth_user);
+
+	if (user)
+		return str_dup(&acc->auth_user, user);
+
+	return 0;
+}
+
+
+/**
+ * Set the authentication password for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param pass  Authentication password (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_auth_pass(struct account *acc, const char *pass)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->auth_pass = mem_deref(acc->auth_pass);
+
+	if (pass)
+		return str_dup(&acc->auth_pass, pass);
+
+	return 0;
+}
+
+
+/**
+ * Set an outbound proxy for a SIP account
+ *
+ * @param acc  User-Agent account
+ * @param ob   Outbound proxy
+ * @param ix   Index of outbound proxy
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
+{
+	if (!acc || ix >= ARRAY_SIZE(acc->outbound))
+		return EINVAL;
+
+	acc->outbound[ix] = mem_deref(acc->outbound[ix]);
+
+	if (ob)
+		return str_dup(&(acc->outbound[ix]), ob);
+
+	return 0;
+}
+
+
+/**
+ * Set the SIP nat protocol for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param sipnat  SIP nat protocol
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_sipnat(struct account *acc, const char *sipnat)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (sipnat)
+		if (0 == str_casecmp(sipnat, "outbound")) {
+			acc->sipnat = mem_deref(acc->sipnat);
+			return str_dup(&acc->sipnat, sipnat);
+		}
+		else {
+			warning("account: unknown sipnat value: '%s'\n",
+				sipnat);
+			return EINVAL;
+		}
+	else
+		acc->sipnat = mem_deref(acc->sipnat);
+
+	return 0;
+}
+
+
+/**
  * Sets the displayed name. Pass null in dname to disable display name
  *
  * @param acc      User-Agent account
@@ -426,6 +513,211 @@ int account_set_display_name(struct account *acc, const char *dname)
 
 	if (dname)
 		return str_dup(&acc->dispname, dname);
+
+	return 0;
+}
+
+
+/**
+ * Set the SIP registration interval for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param regint  Registration interval in [seconds]
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_regint(struct account *acc, uint32_t regint)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->regint = regint;
+
+	return 0;
+}
+
+
+/**
+ * Set the STUN server URI for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param uri   STUN server URI (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_uri(struct account *acc, const char *uri)
+{
+	struct pl pl;
+	int err;
+
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_host = mem_deref(acc->stun_host);
+
+	if (!uri)
+		return 0;
+
+	pl_set_str(&pl, uri);
+	err = stunuri_decode(&acc->stun_host, &pl);
+	if (err)
+		warning("account: decode '%r' failed: %m\n",
+			&pl, err);
+
+	return err;
+}
+
+
+/**
+ * Set the stun host for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param host  Stun host (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_host(struct account *acc, const char *host)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (acc->stun_host)
+		return stunuri_set_host(acc->stun_host, host);
+
+	return 0;
+}
+
+
+/**
+ * Set the port of the STUN host of a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param port    Port number
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_port(struct account *acc, uint16_t port)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (acc->stun_host)
+		return stunuri_set_port(acc->stun_host, port);
+
+	return 0;
+}
+
+
+/**
+ * Set the STUN user for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param user  STUN username (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_user(struct account *acc, const char *user)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_user = mem_deref(acc->stun_user);
+
+	if (user)
+		return str_dup(&acc->stun_user, user);
+
+	return 0;
+}
+
+
+/**
+ * Set the STUN password for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param pass  STUN password (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_pass(struct account *acc, const char *pass)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_pass = mem_deref(acc->stun_pass);
+
+	if (pass)
+		return str_dup(&acc->stun_pass, pass);
+
+	return 0;
+}
+
+
+/**
+ * Set the media encryption for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param mencid  Media encryption id
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_mediaenc(struct account *acc, const char *mencid)
+{
+	const struct menc *menc = NULL;
+	if (!acc)
+		return EINVAL;
+
+	if (mencid) {
+		menc = menc_find(mencid);
+		if (!menc) {
+			warning("account: mediaenc not found: `%s'\n",
+				mencid);
+			return EINVAL;
+		}
+	}
+
+	acc->mencid = mem_deref(acc->mencid);
+	acc->menc = NULL;
+
+	if (mencid) {
+		acc->menc = menc;
+		return str_dup(&acc->mencid, mencid);
+	}
+
+	return 0;
+}
+
+
+/**
+ * Set the media NAT handling for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param mnatid  Media NAT handling id
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_medianat(struct account *acc, const char *mnatid)
+{
+	const struct mnat *mnat = NULL;
+
+	if (!acc)
+		return EINVAL;
+
+	if (mnatid) {
+		mnat = mnat_find(mnatid);
+		if (!mnat) {
+			warning("account: medianat not found: `%s'\n",
+				mnatid);
+			return EINVAL;
+		}
+	}
+
+	acc->mnatid = mem_deref(acc->mnatid);
+	acc->mnat = NULL;
+
+	if (mnatid) {
+		acc->mnat = mnat;
+		return str_dup(&acc->mnatid, mnatid);
+	}
 
 	return 0;
 }
@@ -478,6 +770,19 @@ struct sip_addr *account_laddr(const struct account *acc)
 }
 
 
+/**
+ * Get the decoded AOR URI of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Decoded URI
+ */
+struct uri *account_luri(const struct account *acc)
+{
+	return acc ? (struct uri *)&acc->luri : NULL;
+}
+
+
 uint32_t account_regint(const struct account *acc)
 {
 	return acc ? acc->regint : 0;
@@ -496,6 +801,32 @@ enum answermode account_answermode(const struct account *acc)
 }
 
 
+/**
+ * Set the answermode of an account
+ *
+ * @param acc  User-Agent account
+ * @param mode Answermode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_answermode(struct account *acc, enum answermode mode)
+{
+	if (!acc)
+		return EINVAL;
+
+	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
+	    (mode != ANSWERMODE_AUTO) /*&& (mode != ANSWERMODE_EARLY_VIDEO) &&
+	    (mode != ANSWERMODE_EARLY_AUDIO)*/) {
+		warning("account: invalid answermode : `%d'\n", mode);
+		return EINVAL;
+	}
+
+	acc->answermode = mode;
+
+	return 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -505,6 +836,201 @@ static const char *answermode_str(enum answermode mode)
 	case ANSWERMODE_AUTO:   return "auto";
 	default: return "???";
 	}
+}
+
+
+/**
+ * Get the SIP Display Name of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return SIP Display Name
+ */
+const char *account_display_name(const struct account *acc)
+{
+	return acc ? acc->dispname : NULL;
+}
+
+
+/**
+ * Get the SIP Address-of-Record (AOR) of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return SIP Address-of-Record (AOR)
+ */
+const char *account_aor(const struct account *acc)
+{
+	return acc ? acc->aor : NULL;
+}
+
+
+/**
+ * Get the authentication username of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Authentication username
+ */
+const char *account_auth_user(const struct account *acc)
+{
+	return acc ? acc->auth_user : NULL;
+}
+
+
+/**
+ * Get the SIP authentication password of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Authentication password
+ */
+const char *account_auth_pass(const struct account *acc)
+{
+	return acc ? acc->auth_pass : NULL;
+}
+
+
+/**
+ * Get the outbound SIP server of an account
+ *
+ * @param acc User-Agent account
+ * @param ix  Index starting at zero
+ *
+ * @return Outbound SIP proxy, NULL if not configured
+ */
+const char *account_outbound(const struct account *acc, unsigned ix)
+{
+	if (!acc || ix >= ARRAY_SIZE(acc->outbound))
+		return NULL;
+
+	return acc->outbound[ix];
+}
+
+
+/**
+ * Get sipnat protocol of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return sipnat protocol or NULL if not set
+ */
+const char *account_sipnat(const struct account *acc)
+{
+	return acc ? acc->sipnat : NULL;
+}
+
+
+/**
+ * Get the audio packet-time (ptime) of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Packet-time (ptime)
+ */
+uint32_t account_ptime(const struct account *acc)
+{
+	return acc ? acc->ptime : 0;
+}
+
+
+/**
+ * Get the STUN username of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN username
+ */
+const char *account_stun_user(const struct account *acc)
+{
+	return acc ? acc->stun_user : NULL;
+}
+
+
+/**
+ * Get the STUN password of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN password
+ */
+const char *account_stun_pass(const struct account *acc)
+{
+	return acc ? acc->stun_pass : NULL;
+}
+
+
+/**
+ * Get the STUN server URI of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN server URI
+ */
+const struct stun_uri *account_stun_uri(const struct account *acc)
+{
+	if (!acc)
+		return NULL;
+
+	return acc->stun_host ? acc->stun_host : NULL;
+}
+
+
+/**
+ * Get the STUN hostname of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN hostname
+ */
+const char *account_stun_host(const struct account *acc)
+{
+	if (!acc)
+		return NULL;
+
+	return acc->stun_host ? acc->stun_host->host : NULL;
+}
+
+
+/**
+ * Get the port of the STUN host of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Port number or 0 if not set
+ */
+uint16_t account_stun_port(const struct account *acc)
+{
+	if (!acc)
+		return 0;
+
+	return acc->stun_host ? acc->stun_host->port : 0;
+}
+
+
+/**
+ * Get the media encryption of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Media encryption id or NULL if not set
+ */
+const char *account_mediaenc(const struct account *acc)
+{
+	return acc ? acc->mencid : NULL;
+}
+
+
+/**
+ * Get the media NAT handling of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Media NAT handling id or NULL if not set
+ */
+const char *account_medianat(const struct account *acc)
+{
+	return acc ? acc->mnatid : NULL;
 }
 
 
@@ -552,8 +1078,10 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
 	err |= re_hprintf(pf, " rtpkeep:      %s\n", acc->rtpkeep);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
-	err |= re_hprintf(pf, " stunserver:   stun:%s@%s:%u\n",
-			  acc->stun_user, acc->stun_host, acc->stun_port);
+	err |= re_hprintf(pf, " stunuser:     %s\n", acc->stun_user);
+	err |= re_hprintf(pf, " stunserver:   %H\n",
+			  stunuri_print, acc->stun_host);
+
 	if (!list_isempty(&acc->vidcodecl)) {
 		err |= re_hprintf(pf, " video_codecs:");
 		for (le = list_head(&acc->vidcodecl); le; le = le->next) {

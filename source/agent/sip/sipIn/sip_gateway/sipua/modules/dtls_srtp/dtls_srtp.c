@@ -49,6 +49,7 @@
 struct menc_sess {
 	struct sdp_session *sdp;
 	bool offerer;
+	menc_event_h *eventh;
 	menc_error_h *errorh;
 	void *arg;
 };
@@ -58,16 +59,35 @@ struct dtls_srtp {
 	struct comp compv[2];
 	const struct menc_sess *sess;
 	struct sdp_media *sdpm;
-	struct tmr tmr;
+	const struct stream *strm;   /**< pointer to parent */
 	bool started;
 	bool active;
 	bool mux;
 };
 
+/* RFC 4145 */
+enum setup {
+	SETUP_ACTIVE = 0,
+	SETUP_PASSIVE,
+	SETUP_ACTPASS,
+};
+
 static struct tls *tls;
 static const char* srtp_profiles =
 	"SRTP_AES128_CM_SHA1_80:"
-	"SRTP_AES128_CM_SHA1_32";
+	"SRTP_AES128_CM_SHA1_32:"
+	"SRTP_AEAD_AES_128_GCM:"
+	"SRTP_AEAD_AES_256_GCM";
+
+
+static enum setup setup_decode(const char *setup)
+{
+	if (0 == str_casecmp(setup, "active")) return SETUP_ACTIVE;
+	if (0 == str_casecmp(setup, "passive")) return SETUP_PASSIVE;
+	if (0 == str_casecmp(setup, "actpass")) return SETUP_ACTPASS;
+
+	return (enum setup)-1;
+}
 
 
 static void sess_destructor(void *arg)
@@ -82,8 +102,6 @@ static void destructor(void *arg)
 {
 	struct dtls_srtp *st = arg;
 	size_t i;
-
-	tmr_cancel(&st->tmr);
 
 	for (i=0; i<2; i++) {
 		struct comp *c = &st->compv[i];
@@ -151,7 +169,8 @@ static bool verify_fingerprint(const struct sdp_session *sess,
 
 static int session_alloc(struct menc_sess **sessp,
 			 struct sdp_session *sdp, bool offerer,
-			 menc_error_h *errorh, void *arg)
+			 menc_event_h *eventh, menc_error_h *errorh,
+			 void *arg)
 {
 	struct menc_sess *sess;
 	int err;
@@ -165,6 +184,7 @@ static int session_alloc(struct menc_sess **sessp,
 
 	sess->sdp     = mem_ref(sdp);
 	sess->offerer = offerer;
+	sess->eventh  = eventh;
 	sess->errorh  = errorh;
 	sess->arg     = arg;
 
@@ -190,12 +210,27 @@ static int session_alloc(struct menc_sess **sessp,
 }
 
 
+static size_t get_master_keylen(enum srtp_suite suite)
+{
+	switch (suite) {
+
+	case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
+	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
+	case SRTP_AES_128_GCM:             return 16+12;
+	case SRTP_AES_256_GCM:             return 32+12;
+	default: return 0;
+	}
+}
+
+
 static void dtls_estab_handler(void *arg)
 {
 	struct comp *comp = arg;
 	const struct dtls_srtp *ds = comp->ds;
 	enum srtp_suite suite;
-	uint8_t cli_key[30], srv_key[30];
+	uint8_t cli_key[32+12], srv_key[32+12];
+	char buf[32] = "";
+	size_t keylen;
 	int err;
 
 	if (!verify_fingerprint(ds->sess->sdp, ds->sdpm, comp->tls_conn)) {
@@ -219,17 +254,31 @@ static void dtls_estab_handler(void *arg)
 	     sdp_media_name(ds->sdpm),
 	     comp->is_rtp ? "RTP" : "RTCP", srtp_suite_name(suite));
 
+	keylen = get_master_keylen(suite);
+
 	err |= srtp_stream_add(&comp->tx, suite,
-			       ds->active ? cli_key : srv_key, 30, true);
+			       ds->active ? cli_key : srv_key, keylen, true);
 	err |= srtp_stream_add(&comp->rx, suite,
-			       ds->active ? srv_key : cli_key, 30, false);
+			       ds->active ? srv_key : cli_key, keylen, false);
+	if (err)
+		return;
 
 	err |= srtp_install(comp);
 	if (err) {
 		warning("dtls_srtp: srtp_install: %m\n", err);
 	}
 
-	/* todo: notify application that crypto is up and running */
+	if (ds->sess->eventh) {
+		if (re_snprintf(buf, sizeof(buf), "%s,%s",
+				sdp_media_name(ds->sdpm),
+				comp->is_rtp ? "RTP" : "RTCP"))
+			ds->sess->eventh(MENC_EVENT_SECURE, buf,
+					 (struct stream *)ds->strm,
+					 ds->sess->arg);
+		else
+			warning("dtls_srtp: failed to print secure"
+				" event arguments\n");
+	}
 }
 
 
@@ -255,7 +304,19 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	info("dtls_srtp: incoming DTLS connect from %J\n", peer);
+	info("dtls_srtp: %s: incoming DTLS connect from %J\n",
+	     sdp_media_name(comp->ds->sdpm), peer);
+
+	if (comp->tls_conn) {
+		warning("dtls_srtp: '%s' dtls already accepted (peer = %J)\n",
+			sdp_media_name(comp->ds->sdpm),
+			dtls_peer(comp->tls_conn));
+
+		if (comp->ds->sess->errorh)
+			comp->ds->sess->errorh(EPROTO, comp->ds->sess->arg);
+
+		return;
+	}
 
 	err = dtls_accept(&comp->tls_conn, tls, comp->dtls_sock,
 			  dtls_estab_handler, NULL, dtls_close_handler, comp);
@@ -279,6 +340,9 @@ static int component_start(struct comp *comp, struct sdp_media *sdpm)
 	else
 		sdp_media_raddr_rtcp(sdpm, &raddr);
 
+	debug("dtls_srtp: component start: %s [raddr=%J]\n",
+	      comp->is_rtp ? "RTP" : "RTCP", raddr);
+
 	err = dtls_listen(&comp->dtls_sock, NULL,
 			  comp->app_sock, 2, LAYER_DTLS,
 			  dtls_conn_handler, comp);
@@ -290,6 +354,11 @@ static int component_start(struct comp *comp, struct sdp_media *sdpm)
 	if (sa_isset(&raddr, SA_ALL)) {
 
 		if (comp->ds->active && !comp->tls_conn) {
+
+			info("dtls_srtp: '%s,%s' dtls connect to %J\n",
+			     sdp_media_name(comp->ds->sdpm),
+			     comp->is_rtp ? "RTP" : "RTCP",
+			     raddr);
 
 			err = dtls_connect(&comp->tls_conn, tls,
 					   comp->dtls_sock, &raddr,
@@ -334,18 +403,10 @@ static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm)
 }
 
 
-static void timeout(void *arg)
-{
-	struct dtls_srtp *st = arg;
-
-	media_start(st, st->sdpm);
-}
-
-
 static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 		       struct rtp_sock *rtp, int proto,
 		       void *rtpsock, void *rtcpsock,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm, const struct stream *strm)
 {
 	struct dtls_srtp *st;
 	const char *setup, *fingerprint;
@@ -353,7 +414,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	unsigned i;
 	(void)rtp;
 
-	if (!mp || !sess || proto != IPPROTO_UDP)
+	if (!mp || !sess)
 		return EINVAL;
 
 	st = (struct dtls_srtp *)*mp;
@@ -366,6 +427,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 	st->sess = sess;
 	st->sdpm = mem_ref(sdpm);
+	st->strm = strm;
 	st->compv[0].app_sock = mem_ref(rtpsock);
 	st->compv[1].app_sock = mem_ref(rtcpsock);
 
@@ -396,10 +458,13 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 	setup = sdp_media_session_rattr(st->sdpm, st->sess->sdp, "setup");
 	if (setup) {
-		st->active = !(0 == str_casecmp(setup, "active"));
+		enum setup rsetup = setup_decode(setup);
 
-		/* note: we need to wait for ICE to settle ... */
-		tmr_start(&st->tmr, 100, timeout, st);
+		st->active = rsetup != SETUP_ACTIVE;
+
+		err = media_start(st, st->sdpm);
+		if (err)
+			return err;
 	}
 
 	/* SDP offer/answer on fingerprint attribute */
@@ -452,6 +517,8 @@ static struct menc dtls_srtp2 = {
 
 static int module_init(void)
 {
+	char ec[64] = "prime256v1";
+	const char *cn = "dtls@baresip";
 	int err;
 
 	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
@@ -461,10 +528,14 @@ static int module_init(void)
 		return err;
 	}
 
-	err = tls_set_selfsigned(tls, "dtls@baresip");
+	//(void)conf_get_str(conf_cur(), "dtls_srtp_use_ec", ec, sizeof(ec));
+
+	info ("dtls_srtp: use %s for elliptic curve cryptography\n", ec);
+
+	err = tls_set_selfsigned_ec(tls, cn, ec);
 	if (err) {
-		warning("dtls_srtp: failed to self-sign certificate (%m)\n",
-			err);
+		warning("dtls_srtp: failed to self-sign "
+			"ec-certificate (%m)\n", err);
 		return err;
 	}
 
@@ -477,8 +548,8 @@ static int module_init(void)
 		return err;
 	}
 
-	menc_register(&dtls_srtpf);
 	menc_register(&dtls_srtp);
+	menc_register(&dtls_srtpf);
 	menc_register(&dtls_srtp2);
 
 	debug("DTLS-SRTP ready with profiles %s\n", srtp_profiles);

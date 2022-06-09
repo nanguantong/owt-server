@@ -42,15 +42,43 @@ struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
 int account_debug(struct re_printf *pf, const struct account *acc);
+int account_set_auth_user(struct account *acc, const char *user);
+int account_set_auth_pass(struct account *acc, const char *pass);
+int account_set_outbound(struct account *acc, const char *ob, unsigned ix);
+int account_set_sipnat(struct account *acc, const char *sipnat);
+int account_set_answermode(struct account *acc, enum answermode mode);
 int account_set_display_name(struct account *acc, const char *dname);
+int account_set_regint(struct account *acc, uint32_t regint);
+int account_set_stun_uri(struct account *acc, const char *uri);
+int account_set_stun_host(struct account *acc, const char *host);
+int account_set_stun_port(struct account *acc, uint16_t port);
+int account_set_stun_user(struct account *acc, const char *user);
+int account_set_stun_pass(struct account *acc, const char *pass);
+int account_set_mediaenc(struct account *acc, const char *mediaenc);
+int account_set_medianat(struct account *acc, const char *medianat);
 int account_auth(const struct account *acc, char **username, char **password,
 		 const char *realm);
 struct list *account_aucodecl(const struct account *acc);
 struct list *account_vidcodecl(const struct account *acc);
 struct sip_addr *account_laddr(const struct account *acc);
+struct uri *account_luri(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
+uint32_t account_ptime(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
+const char *account_display_name(const struct account *acc);
+const char *account_aor(const struct account *acc);
+const char *account_auth_user(const struct account *acc);
+const char *account_auth_pass(const struct account *acc);
+const char *account_outbound(const struct account *acc, unsigned ix);
+const char *account_sipnat(const struct account *acc);
+const char *account_stun_user(const struct account *acc);
+const char *account_stun_pass(const struct account *acc);
+const char *account_stun_host(const struct account *acc);
+const struct stun_uri *account_stun_uri(const struct account *acc);
+uint16_t account_stun_port(const struct account *acc);
+const char *account_mediaenc(const struct account *acc);
+const char *account_medianat(const struct account *acc);
 
 
 /*
@@ -162,12 +190,15 @@ struct config_video {
 /** Audio/Video Transport */
 struct config_avt {
 	uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
+	uint8_t rtpv_tos;       /**< TOS for outg. video RTP        */
 	struct range rtp_ports; /**< RTP port range                 */
 	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
 	bool rtcp_enable;       /**< RTCP is enabled                */
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
+	enum jbuf_type jbtype;  /**< Jitter buffer type             */
 	struct range jbuf_del;  /**< Delay, number of frames        */
 	bool rtp_stats;         /**< Enable RTP statistics          */
+	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 };
 
 /* Network */
@@ -270,16 +301,28 @@ struct menc;
 struct menc_sess;
 struct menc_media;
 
+/** Defines a media encryption event */
+enum menc_event {
+	MENC_EVENT_SECURE,          /**< Media is secured               */
+	MENC_EVENT_VERIFY_REQUEST,  /**< Request user to verify a code  */
+	MENC_EVENT_PEER_VERIFIED,   /**< Peer was verified successfully */
+};
+
+
+typedef void (menc_event_h)(enum menc_event event, const char *prm,
+			    struct stream *strm, void *arg);
 
 typedef void (menc_error_h)(int err, void *arg);
 
 typedef int  (menc_sess_h)(struct menc_sess **sessp, struct sdp_session *sdp,
-			   bool offerer, menc_error_h *errorh, void *arg);
+			   bool offerer, menc_event_h *eventh,
+			   menc_error_h *errorh, void *arg);
 
 typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
 			    struct rtp_sock *rtp, int proto,
 			    void *rtpsock, void *rtcpsock,
-			    struct sdp_media *sdpm);
+			    struct sdp_media *sdpm,
+				const struct stream *strm);
 
 struct menc {
 	struct le le;
@@ -552,6 +595,33 @@ int   video_debug(struct re_printf *pf, const struct video *v);
 
 
 /*
+ * STUN URI
+ */
+
+/** Defines the STUN uri scheme */
+enum stun_scheme {
+	STUN_SCHEME_STUN,  /**< STUN scheme        */
+	STUN_SCHEME_STUNS, /**< Secure STUN scheme */
+	STUN_SCHEME_TURN,  /**< TURN scheme        */
+	STUN_SCHEME_TURNS, /**< Secure TURN scheme */
+};
+
+/** Defines a STUN/TURN uri */
+struct stun_uri {
+	enum stun_scheme scheme;  /**< STUN Scheme            */
+	char *host;               /**< Hostname or IP-address */
+	uint16_t port;            /**< Port number            */
+	int proto;                /**< Transport protocol     */
+};
+
+int stunuri_decode(struct stun_uri **sup, const struct pl *pl);
+int stunuri_set_host(struct stun_uri *su, const char *host);
+int stunuri_set_port(struct stun_uri *su, uint16_t port);
+int stunuri_print(struct re_printf *pf, const struct stun_uri *su);
+const char *stunuri_scheme_name(enum stun_scheme scheme);
+
+
+/*
  * Media NAT
  */
 
@@ -563,7 +633,7 @@ typedef void (mnat_estab_h)(int err, uint16_t scode, const char *reason,
 			    void *arg);
 
 typedef int (mnat_sess_h)(struct mnat_sess **sessp, struct dnsc *dnsc,
-			  int af, const char *srv, uint16_t port,
+			  int af, const struct stun_uri *srv,
 			  const char *user, const char *pass,
 			  struct sdp_session *sdp, bool offerer,
 			  mnat_estab_h *estabh, void *arg);
@@ -577,6 +647,8 @@ typedef int (mnat_update_h)(struct mnat_sess *sess);
 int mnat_register(struct mnat **mnatp, const char *id, const char *ftag,
 		  mnat_sess_h *sessh, mnat_media_h *mediah,
 		  mnat_update_h *updateh);
+//void mnat_register(struct mnat *mnat);
+void mnat_unregister(struct mnat *mnat);
 
 
 /*

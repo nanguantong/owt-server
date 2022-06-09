@@ -272,7 +272,7 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 
 
 static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
-			 int af, const char *srv, uint16_t port,
+			 int af, const struct stun_uri *srv,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
 			 mnat_estab_h *estabh, void *arg)
@@ -286,7 +286,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 	info("ice: new session with %s-server at %s (username=%s)\n",
 	     ice.turn ? "TURN" : "STUN",
-	     srv, user);
+	     srv->host, user);
 
 	sess = mem_zalloc(sizeof(*sess), session_destructor);
 	if (!sess)
@@ -323,7 +323,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	usage = ice.turn ? stun_usage_relay : stun_usage_binding;
 
 	err = stun_server_discover(&sess->dnsq, dnsc, usage, stun_proto_udp,
-				   af, srv, port, dns_handler, sess);
+				   af, srv->host, srv->port, dns_handler, sess);
 
  out:
 	if (err)

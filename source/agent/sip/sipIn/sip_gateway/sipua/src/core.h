@@ -57,8 +57,7 @@ struct account {
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */
 	char *stun_pass;             /**< STUN Password                      */
-	char *stun_host;             /**< STUN Hostname                      */
-	uint16_t stun_port;          /**< STUN Port number                   */
+	struct stun_uri *stun_host;  /**< STUN Server                        */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
 };
@@ -253,6 +252,11 @@ const struct sdp_format *sdp_media_format_cycle(struct sdp_media *m);
  * Stream
  */
 
+enum media_type {
+	MEDIA_AUDIO = 0,
+	MEDIA_VIDEO,
+};
+
 struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
@@ -277,6 +281,7 @@ struct stream {
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	struct metric metric_tx; /**< Metrics for transmit                  */
 	struct metric metric_rx; /**< Metrics for receiving                 */
+	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
@@ -291,7 +296,7 @@ struct stream {
 
 int  stream_alloc(struct stream **sp, const struct config_avt *cfg,
 		  struct call *call, struct sdp_session *sdp_sess,
-		  const char *name, int label,
+		  enum media_type type, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
 		  const char *cname,
@@ -308,6 +313,7 @@ void stream_send_fir(struct stream *s, bool pli);
 void stream_send_rtcpfb(struct stream *s, struct mbuf *mb);
 void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
+enum media_type stream_type(const struct stream *s);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
 

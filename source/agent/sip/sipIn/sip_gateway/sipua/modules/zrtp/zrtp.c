@@ -162,7 +162,8 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		       struct rtp_sock *rtp,
 		       int proto, void *rtpsock, void *rtcpsock,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm,
+		       const struct stream *strm)
 {
 	struct menc_media *st;
 	zrtp_status_t s;
@@ -182,6 +183,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		return ENOMEM;
 
 	st->sess = sess;
+	st->strm = strm;
 	st->rtpsock = mem_ref(rtpsock);
 
 	err = udp_register_helper(&st->uh, rtpsock, layer,
