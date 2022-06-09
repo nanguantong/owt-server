@@ -227,7 +227,7 @@ static uint32_t packetization_mode(const char *fmtp)
 
 static const char* profile(const char *fmtp) {
 	struct pl pl, data;
-        uint32_t profile_level_id, profile_idc, profile_iop;
+	uint32_t profile_level_id, profile_idc, profile_iop;
 
 	if (!fmtp)
 		return "unspecified";
@@ -235,59 +235,59 @@ static const char* profile(const char *fmtp) {
 	pl_set_str(&pl, fmtp);
 
 	if (fmt_param_get(&pl, "profile-level-id", &data)) {
-                profile_level_id = pl_x32(&data);
-                profile_idc = (profile_level_id >> 16) & 0xff;
-                profile_iop = (profile_level_id >> 8) & 0xff;
+		profile_level_id = pl_x32(&data);
+		profile_idc = (profile_level_id >> 16) & 0xff;
+		profile_iop = (profile_level_id >> 8) & 0xff;
 
-                /*info("profile: fmtp:%s profile_level_id:%x\n", fmtp, profile_level_id);*/
-                //According to rfc6481 section 8.1
-                if (profile_idc == 0x42 && (profile_iop & 0x4f)) {
-                        return "CB";
-                } else if (profile_idc == 0x4d && (profile_iop & 0x8f)) {
-                        return "CB";
-                } else if (profile_idc == 0x58 && (profile_iop & 0xcf)) {
-                        return "CB";
-                } else if (profile_idc == 0x42 && !(profile_iop & 0x4f)) {
-                        return "B";
-                } else if (profile_idc == 0x58 && ((profile_iop & 0xcf) == 0x80)) {
-                        return "B";
-                } else if (profile_idc == 0x4d && !(profile_iop & 0xaf)) {
-                        return "M";
-                } else if (profile_idc == 0x58 && !(profile_iop & 0xcf)) {
-                        return "E";
-                } else if (profile_idc == 0x64 && !(profile_iop & 0xff)) {
-                        return "H";
-                } else if (profile_idc == 0x6e && (profile_iop & 0xff)) {
-                        return "H10";
-                } else if (profile_idc == 0x7a && (profile_iop & 0xff)) {
-                        return "H42";
-                } else if (profile_idc == 0xf4 && (profile_iop & 0xff)) {
-                        return "H44";
-                } else if (profile_idc == 0x6e && ((profile_iop & 0xff) == 0x10)) {
-                        return "H10I";
-                } else if (profile_idc == 0x7a && ((profile_iop & 0xff) == 0x10)) {
-                        return "H42I";
-                } else if (profile_idc == 0xf4 && ((profile_iop & 0xff) == 0x10)) {
-                        return "H44I";
-                } else if (profile_idc == 0x2c && ((profile_iop & 0xff) == 0x10)) {
-                        return "C44I";
-                } else {
-                        return "invalid";
-                }
-        }
+		/*info("profile: fmtp:%s profile_level_id:%x\n", fmtp, profile_level_id);*/
+		//According to rfc6481 section 8.1
+		if (profile_idc == 0x42 && (profile_iop & 0x4f)) {
+			return "CB";
+		} else if (profile_idc == 0x4d && (profile_iop & 0x8f)) {
+			return "CB";
+		} else if (profile_idc == 0x58 && (profile_iop & 0xcf)) {
+			return "CB";
+		} else if (profile_idc == 0x42 && !(profile_iop & 0x4f)) {
+			return "B";
+		} else if (profile_idc == 0x58 && ((profile_iop & 0xcf) == 0x80)) {
+			return "B";
+		} else if (profile_idc == 0x4d && !(profile_iop & 0xaf)) {
+			return "M";
+		} else if (profile_idc == 0x58 && !(profile_iop & 0xcf)) {
+			return "E";
+		} else if (profile_idc == 0x64 && !(profile_iop & 0xff)) {
+			return "H";
+		} else if (profile_idc == 0x6e && (profile_iop & 0xff)) {
+			return "H10";
+		} else if (profile_idc == 0x7a && (profile_iop & 0xff)) {
+			return "H42";
+		} else if (profile_idc == 0xf4 && (profile_iop & 0xff)) {
+			return "H44";
+		} else if (profile_idc == 0x6e && ((profile_iop & 0xff) == 0x10)) {
+			return "H10I";
+		} else if (profile_idc == 0x7a && ((profile_iop & 0xff) == 0x10)) {
+			return "H42I";
+		} else if (profile_idc == 0xf4 && ((profile_iop & 0xff) == 0x10)) {
+			return "H44I";
+		} else if (profile_idc == 0x2c && ((profile_iop & 0xff) == 0x10)) {
+			return "C44I";
+		} else {
+			return "invalid";
+		}
+	}
 
-        return "unspecified";
+	return "unspecified";
 }
 
 static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
 {
-        const char *profile1;
-        const char *profile2;
-        profile1 = profile(fmtp1);
-        profile2 = profile(fmtp2);
+	const char *profile1;
+	const char *profile2;
+	profile1 = profile(fmtp1);
+	profile2 = profile(fmtp2);
 	(void)data;
 
-        /*info("h264_fmtp_cmp: fmtp1:%s fmtp2:%s, profile1:%s, profile2:%s\n", fmtp1, fmtp2, profile1, profile2);*/
+	/*info("h264_fmtp_cmp: fmtp1:%s fmtp2:%s, profile1:%s, profile2:%s\n", fmtp1, fmtp2, profile1, profile2);*/
 	return packetization_mode(fmtp1) == packetization_mode(fmtp2) && !strcmp(profile1, profile2) && strcmp(profile1, "invalid");
 }
 
@@ -389,7 +389,7 @@ static bool h265_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
 {
 	(void)data;
 
-        info("h265_fmtp_cmp: fmtp1:%s fmtp2:%s\n", fmtp1, fmtp2);
+	info("h265_fmtp_cmp: fmtp1:%s fmtp2:%s\n", fmtp1, fmtp2);
 	return get_parameter(fmtp1, "profile-id") == get_parameter(fmtp2, "profile-id");
 }
 

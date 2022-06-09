@@ -223,13 +223,13 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	int err;
 
 	peeruri = call_peeruri(call);
-        if (!peeruri)
+	if (!peeruri)
 		return;
 
 	switch (ev) {
 
 	case CALL_EVENT_INCOMING:
-                /* TODO intel webrtc
+		/* TODO intel webrtc
 		if (contact_block_access(peeruri)) {
 
 			info("ua: blocked access: \"%s\"\n", peeruri);
@@ -869,7 +869,7 @@ const char *ua_aor(const struct ua *ua)
  */
 enum presence_status ua_presence_status(const struct ua *ua)
 {
-	return ua ? ua->my_status : PRESENCE_UNKNOWN;
+	return ua ? ua->pstat : PRESENCE_UNKNOWN;
 }
 
 
@@ -884,7 +884,7 @@ void ua_presence_status_set(struct ua *ua, const enum presence_status status)
 	if (!ua)
 		return;
 
-	ua->my_status = status;
+	ua->pstat = status;
 }
 
 

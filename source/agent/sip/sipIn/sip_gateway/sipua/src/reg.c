@@ -14,6 +14,7 @@ struct reg {
 	struct ua *ua;               /**< Pointer to parent UA object        */
 	struct sipreg *sipreg;       /**< SIP Register client                */
 	int id;                      /**< Registration ID (for SIP outbound) */
+	int regint;                  /**< Registration interval              */
 
 	/* status: */
 	uint16_t scode;              /**< Registration status code           */
@@ -210,6 +211,7 @@ int reg_add(struct list *lst, struct ua *ua, int regid)
 int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 		 uint32_t regint, const char *outbound)
 {
+	struct account *acc;
 	const char *routev[1];
 	int err;
 
@@ -217,11 +219,13 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 		return EINVAL;
 
 	reg->scode = 0;
+	reg->regint = regint;
 	routev[0] = outbound;
+	acc = ua_account(reg->ua);
 
 	reg->sipreg = mem_deref(reg->sipreg);
 	err = sipreg_register(&reg->sipreg, reg->ua->owner->sip, reg_uri,
-			      ua_aor(reg->ua), ua_aor(reg->ua),
+			      ua_aor(reg->ua), acc ? acc->dispname : NULL, ua_aor(reg->ua),
 			      regint, ua_local_cuser(reg->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,

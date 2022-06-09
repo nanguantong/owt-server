@@ -172,7 +172,8 @@ struct config_avt {
 
 /* Network */
 struct config_net {
-	char ifname[16];        /**< Bind to interface (optional)   */
+	int af;                 /**< AF_UNSPEC, AF_INET or AF_INET6 */
+	char ifname[64];        /**< Bind to interface (optional)   */
 };
 
 #ifdef USE_VIDEO

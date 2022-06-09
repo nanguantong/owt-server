@@ -373,7 +373,7 @@ struct ua {
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
 	int af;                      /**< Preferred Address Family           */
-        enum presence_status my_status; /**< Presence Status                 */
+	enum presence_status pstat;  /**< Presence Status                    */
 };
 
 struct ua_eh {

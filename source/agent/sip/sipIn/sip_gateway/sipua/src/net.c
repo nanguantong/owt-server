@@ -17,7 +17,7 @@ static struct {
 	char ifname[16];
 #ifdef HAVE_INET6
 	struct sa laddr6;
-	char ifname6[16];
+	char ifname6[64];
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;

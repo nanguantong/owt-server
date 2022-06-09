@@ -264,7 +264,7 @@ static void video_destructor(void *arg)
 
 	// tmr_cancel(&vtx->tmr_rtp);
 	mem_deref(vtx->frame);
-        mem_deref(vtx->mb);
+	mem_deref(vtx->mb);
 
 	/* receive */
 	tmr_cancel(&v->tmr);
@@ -294,9 +294,8 @@ static int get_fps(const struct video *v)
 
 static int vtx_alloc(struct vtx *vtx, struct video *video)
 {
-
 	// tmr_init(&vtx->tmr_rtp);
-        vtx->mb = mbuf_alloc(STREAM_PRESZ + 512);
+	vtx->mb = mbuf_alloc(STREAM_PRESZ + 512);
 	if (!vtx->mb)
 		return ENOMEM;
 
@@ -311,7 +310,6 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 
 static int vrx_alloc(struct vrx *vrx, struct video *video)
 {
-
 	vrx->video  = video;
 	vrx->pt_rx  = -1;
 
@@ -448,7 +446,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	}
 
 	mb->pos = 0;
-    if (mbuf_get_left(mb) && v->call && call_owner) {
+    if (mbuf_get_left(mb) && call_owner) {
         ++v->vrx.rx_counter;
         call_connection_rx_video(call_owner, mbuf_buf(mb), mbuf_get_left(mb));
     }
@@ -458,8 +456,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 static void rtcp_handler(struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
-  uint32_t fci[32] = {0};
-  size_t i = 0;
 	void *owner = (v->call ? call_get_owner(v->call) : NULL);
 	if (!owner)
 		return;
@@ -477,6 +473,7 @@ static void rtcp_handler(struct rtcp_msg *msg, void *arg)
 
 	case RTCP_PSFB:
 		if (msg->hdr.count == RTCP_PSFB_PLI) {
+			debug("video: recv Picture Loss Indication (PLI)\n");
 			v->vtx.picup = true;
 			call_connection_rx_fir(owner);
 		}
@@ -484,15 +481,17 @@ static void rtcp_handler(struct rtcp_msg *msg, void *arg)
 
 	case RTCP_RTPFB:
 		if (msg->hdr.count == RTCP_RTPFB_GNACK) {
+			uint32_t fci[32] = {0};
+			size_t i = 0;
 			v->vtx.picup = true;
-      if (msg->r.fb.n > 32) {
-        info("Too manay GNACK blocks:%u", msg->r.fb.n);
-        break;
-      }
-      for (i = 0; i < msg->r.fb.n; i++) {
-        fci[i] = msg->r.fb.fci.gnackv[i].pid;
-        fci[i] = (fci[i] << 16) + msg->r.fb.fci.gnackv[i].blp;
-      }
+			if (msg->r.fb.n > 32) {
+				info("Too manay GNACK blocks:%u", msg->r.fb.n);
+				break;
+			}
+			for (i = 0; i < msg->r.fb.n; i++) {
+				fci[i] = msg->r.fb.fci.gnackv[i].pid;
+				fci[i] = (fci[i] << 16) + msg->r.fb.fci.gnackv[i].blp;
+			}
 			call_connection_rx_gnack(owner, msg->r.fb.ssrc_packet, msg->r.fb.ssrc_media, msg->r.fb.n, fci);
 		}
 		break;
@@ -526,7 +525,7 @@ int video_alloc(struct video **vp, const struct config *cfg,
 	v->cfg = cfg->video;
 	tmr_init(&v->tmr);
 
-	err = stream_alloc(&v->strm, &cfg->avt, call, sdp_sess, "video", label,
+	err = stream_alloc(&v->strm, &cfg->avt, call, sdp_sess, MEDIA_VIDEO, label,
 			   mnat, mnat_sess, menc, menc_sess,
 			   call_localuri(call),
 			   stream_recv_handler, rtcp_handler, v);
@@ -542,7 +541,7 @@ int video_alloc(struct video **vp, const struct config *cfg,
 
 	/* RFC 4585 */
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), true,
-				   "rtcp-fb", "* nack");
+				   "rtcp-fb", "* nack pli");
 
 	/* RFC 5104 */
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), false,
@@ -740,8 +739,8 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		return EINVAL;
 
 	/* handle vidcodecs without a decoder */
-        /* TODO intel webrtc */
-        /*
+	/* TODO intel webrtc */
+	/*
 	if (!vc->decupdh) {
 		struct vidcodec *vcd;
 
@@ -774,7 +773,7 @@ int get_video_counter(const struct video *video){
 }
 
 void reset_video_counter(struct video *video){
-    if(video){
+    if (video) {
         video->vrx.rx_counter = 0;
     }
 }
@@ -793,11 +792,12 @@ void video_update_picture(struct video *v)
 }
 
 
-static bool sdprattr_contains(struct stream *s, const char *name,
-			      const char *str)
+static bool nack_handler(const char *name, const char *value, void *arg)
 {
-	const char *attr = sdp_media_rattr(stream_sdpmedia(s), name);
-	return attr ? (NULL != strstr(attr, str)) : false;
+	(void)name;
+	(void)arg;
+
+	return 0 == re_regex(value, str_len(value), "nack");
 }
 
 
@@ -807,7 +807,9 @@ void video_sdp_attr_decode(struct video *v)
 		return;
 
 	/* RFC 4585 */
-	v->nack_pli = sdprattr_contains(v->strm, "rtcp-fb", "nack");
+	if (sdp_media_rattr_apply(stream_sdpmedia(v->strm), "rtcp-fb",
+				  nack_handler, 0))
+		v->nack_pli = true;
 }
 
 

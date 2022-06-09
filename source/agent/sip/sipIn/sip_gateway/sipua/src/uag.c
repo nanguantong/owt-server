@@ -29,7 +29,6 @@ static void uag_destructor(void *arg)
 	uag->sock     = mem_deref(uag->sock);
 	uag->lsnr     = mem_deref(uag->lsnr);
 	uag->sip      = mem_deref(uag->sip);
-	/*uag->sip      = mem_deref(uag->sip);*/
 	uag->ua_cur   = mem_deref(uag->ua_cur);
 
 #ifdef USE_TLS
