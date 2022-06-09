@@ -267,7 +267,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	err = stream_sock_alloc(s, call_af(call));
 	if (err) {
 		warning("stream: failed to create socket for media '%s'"
-			" (%m)\n", media_name(name), err);
+			" (%m)\n", media_name(type), err);
 		goto out;
 	}
 
@@ -285,7 +285,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 			goto out;
 	}
 
-	err = sdp_media_add(&s->sdp, sdp_sess, media_name(name),
+	err = sdp_media_add(&s->sdp, sdp_sess, media_name(type),
 				s->rtp ? sa_port(rtp_local(s->rtp)) : PORT_DISCARD,
 			    (menc && menc->sdp_proto) ? menc->sdp_proto :
 			    sdp_proto_rtpavpf);

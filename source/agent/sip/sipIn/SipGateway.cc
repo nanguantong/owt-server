@@ -12,6 +12,11 @@
 
 using namespace v8;
 
+static std::string getString(v8::Local<v8::Value> value) {
+  Nan::Utf8String value_str(Nan::To<v8::String>(value).ToLocalChecked());
+  return std::string(*value_str);
+}
+
 Persistent<Function> SipGateway::constructor;
 SipGateway::SipGateway() {}
 SipGateway::~SipGateway() {}

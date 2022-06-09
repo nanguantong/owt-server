@@ -64,7 +64,7 @@ static int construct_uag(struct uag **uagp, struct new_sipua_th_paras *params)
 		use_tcp = true;
 	}
 #ifdef USE_TLS
-	if (u32mask_enabled(trans_mask, SIP_TRANSP_TLS)) {
+	if (u32mask_enabled(params->transports, SIP_TRANSP_TLS)) {
 		use_tls = true;
 	}
 #endif
@@ -175,9 +175,9 @@ void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, 
 #else
 	cfg->net.af   = AF_INET;
 #endif
-	cfg->avt.rtp_ports.min = rtp_port_min > 0 ? rtp_port_min : cfg->avt.rtp_ports.min;
-	cfg->avt.rtp_ports.max = rtp_port_max > 0 ? rtp_port_max : cfg->avt.rtp_ports.max;
-	cfg->avt.rtp_timeout = rtp_timeout >= 0 ? rtp_timeout : cfg->avt.rtp_timeout;
+	cfg->avt.rtp_ports.min = rtp_port_min;
+	cfg->avt.rtp_ports.max = rtp_port_max;
+	cfg->avt.rtp_timeout = rtp_timeout;
 }
 
 int sipua_new(struct sipua_entity **sipuap, void *endpoint, const char *sip_server, const char *user_name,
