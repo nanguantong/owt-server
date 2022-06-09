@@ -382,7 +382,8 @@ var sipcallsX = (() => {
             sip: {
                 "sipServer": config.sipServer,
                 "username": config.username,
-                "password": config.password
+                "password": config.password,
+                "transport": config.transport
             },
             views: [{
                 name: 'common',
@@ -416,7 +417,8 @@ var sipcallsXX = (() => {
             sip: {
                 "sipServer": config.sipServer,
                 "username": config.username2,
-                "password": config.password
+                "password": config.password,
+                "transport": config.transport
             },
             views: [{
                 name: 'common',

@@ -196,7 +196,7 @@ case $startStop in
 
     sleep 1; [[ -f ${stdout} ]] && head "$stdout"
     ;;
-    
+
   (restart)
      echo restarting $command
 

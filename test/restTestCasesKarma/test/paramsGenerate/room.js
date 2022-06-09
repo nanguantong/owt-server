@@ -42,6 +42,7 @@ var notifyingstreamChange = [true];
 var sipsipserver = [""];
 var sipusername = [""];
 var sippassword = [""];
+var siptransport = [""];
 var roomarray = [];
 /*
   name：Required : string
@@ -141,9 +142,10 @@ var roomarray = [];
   notifyingstreamChange,
   sipsipserver,
   sipusername,
-  sippassword
+  sippassword,
+  siptransport
 ) {
-  var postmould = '{"name":"66","options":{"notifying":{"streamChange":true,"participantActivities":true},"transcoding":{"video":{"parameters":{"keyFrameInterval":true,"bitrate":true,"framerate":true,"resolution":true},"format":true},"audio":true},"mediaOut":{"video":{"parameters":{"keyFrameInterval":[1,30,5,2,1],"bitrate":["x0.8","x0.6","x0.4","x0.2"],"framerate":[6,12,15,24,30,48,60],"resolution":["x3/4","x2/3","x1/2","x1/3","x1/4","hd1080p","hd720p","svga","vga","cif"]},"format":[{"codec":"h264","profile":"CB"},{"codec":"vp8"},{"codec":"vp9"}]},"audio":[{"codec":"opus","sampleRate":48000,"channelNum":2},{"codec":"isac","sampleRate":16000},{"codec":"isac","sampleRate":32000},{"codec":"g722","sampleRate":16000,"channelNum":1},{"codec":"pcma"},{"codec":"pcmu"},{"codec":"aac","sampleRate":48000,"channelNum":2},{"codec":"ac3"},{"codec":"nellymoser"},{"codec":"ilbc"}]},"mediaIn":{"video":[{"codec":"h264","profile":"CB"},{"codec":"vp8"},{"codec":"vp9"}],"audio":[{"codec":"opus","sampleRate":48000,"channelNum":2},{"codec":"isac","sampleRate":16000},{"codec":"isac","sampleRate":32000},{"codec":"g722","sampleRate":16000,"channelNum":1},{"codec":"pcma"},{"codec":"pcmu"},{"codec":"aac"},{"codec":"ac3"},{"codec":"nellymoser"},{"codec":"ilbc"}]},"views":[{"video":{"layout":{"templates":{"custom":[{"region":[{"id":"rectang","shape":"rectangle","area":{"left":0.5,"top":0.5,"width":0.5,"height":0.5}}]}],"base":"fluid"},"fitPolicy":"letterbox"},"keepActiveInputPrimary":false,"bgColor":{"b":0,"g":0,"r":0},"motionFactor":0.8,"maxInput":16,"parameters":{"keyFrameInterval":100,"framerate":24,"resolution":{"height":480,"width":640},"bitrate":500},"format":{"codec":"vp8"}},"audio":{"vad":true,"format":{"channelNum":2,"sampleRate":48000,"codec":"opus"}},"label":"common"}],"roles":[{"subscribe":{"audio":true,"video":true},"publish":{"audio":true,"video":true},"role":"presenter"}],"participantLimit":-1,"inputLimit":-1,"sip":{"sipServer":"10.239.44.17","username":"user","password":"123"}}}';
+  var postmould = '{"name":"66","options":{"notifying":{"streamChange":true,"participantActivities":true},"transcoding":{"video":{"parameters":{"keyFrameInterval":true,"bitrate":true,"framerate":true,"resolution":true},"format":true},"audio":true},"mediaOut":{"video":{"parameters":{"keyFrameInterval":[1,30,5,2,1],"bitrate":["x0.8","x0.6","x0.4","x0.2"],"framerate":[6,12,15,24,30,48,60],"resolution":["x3/4","x2/3","x1/2","x1/3","x1/4","hd1080p","hd720p","svga","vga","cif"]},"format":[{"codec":"h264","profile":"CB"},{"codec":"vp8"},{"codec":"vp9"}]},"audio":[{"codec":"opus","sampleRate":48000,"channelNum":2},{"codec":"isac","sampleRate":16000},{"codec":"isac","sampleRate":32000},{"codec":"g722","sampleRate":16000,"channelNum":1},{"codec":"pcma"},{"codec":"pcmu"},{"codec":"aac","sampleRate":48000,"channelNum":2},{"codec":"ac3"},{"codec":"nellymoser"},{"codec":"ilbc"}]},"mediaIn":{"video":[{"codec":"h264","profile":"CB"},{"codec":"vp8"},{"codec":"vp9"}],"audio":[{"codec":"opus","sampleRate":48000,"channelNum":2},{"codec":"isac","sampleRate":16000},{"codec":"isac","sampleRate":32000},{"codec":"g722","sampleRate":16000,"channelNum":1},{"codec":"pcma"},{"codec":"pcmu"},{"codec":"aac"},{"codec":"ac3"},{"codec":"nellymoser"},{"codec":"ilbc"}]},"views":[{"video":{"layout":{"templates":{"custom":[{"region":[{"id":"rectang","shape":"rectangle","area":{"left":0.5,"top":0.5,"width":0.5,"height":0.5}}]}],"base":"fluid"},"fitPolicy":"letterbox"},"keepActiveInputPrimary":false,"bgColor":{"b":0,"g":0,"r":0},"motionFactor":0.8,"maxInput":16,"parameters":{"keyFrameInterval":100,"framerate":24,"resolution":{"height":480,"width":640},"bitrate":500},"format":{"codec":"vp8"}},"audio":{"vad":true,"format":{"channelNum":2,"sampleRate":48000,"codec":"opus"}},"label":"common"}],"roles":[{"subscribe":{"audio":true,"video":true},"publish":{"audio":true,"video":true},"role":"presenter"}],"participantLimit":-1,"inputLimit":-1,"sip":{"sipServer":"10.239.44.17","username":"user","password":"123","transport":"udp"}}}';
   var postmouldjs = JSON.parse(postmould);
   postmouldjs.name = name;
   postmouldjs.options.participantLimit = participantLimit;
@@ -188,6 +190,7 @@ var roomarray = [];
   postmouldjs.options.sip.sipServer = sipsipserver;
   postmouldjs.options.sip.username = sipusername;
   postmouldjs.options.sip.password = sippassword;
+  postmouldjs.options.sip.transport = siptransport;
   roomarray.push(postmouldjs);
 };
 
@@ -237,7 +240,8 @@ for (var i = 0; i < viewsvideoparametersframerate.length; i++) {
     notifyingstreamChange[i % notifyingstreamChange.length],
     sipsipserver[i % sipsipserver.length],
     sipusername[i % sipusername.length],
-    sippassword[i % sippassword.length]
+    sippassword[i % sippassword.length],
+    siptransport[i % siptransport.length]
   );
 
 

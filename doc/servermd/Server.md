@@ -703,6 +703,7 @@ The meaning of each field is listed below:
         sipServer: The SIP server's hostname or IP address.
         username: The user name registered in the above SIP server.
         password: The user's password.
+        transport: The transport of SIP ua
 
 After the SIP settings have been done, click the "Apply" button at the right side of the Room row to let it take effect. If the "Update Room Success" message shows up and the SIP related information is correct, then SIP clients should be able to join this room via the registered SIP server.
 

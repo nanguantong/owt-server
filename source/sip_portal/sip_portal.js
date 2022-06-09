@@ -84,7 +84,7 @@ var rebuildErizo = function(erizo_id) {
 
             var sipInfo = roomInfo[roomId];
             if (sipInfo) {
-                createSipConnectivity(room_id, sipInfo.sipServer, sipInfo.username, sipInfo.password, sipInfo.transport);
+                createSipConnectivity(roomId, sipInfo.sipServer, sipInfo.username, sipInfo.password, sipInfo.transport);
             }
             break;
         }

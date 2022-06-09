@@ -28,7 +28,8 @@
   "sipInfo":{                        // The sip connectivity setting for room, set this to null when disabled.
     "sipServer":"my.sip.server",     // The sip server's IP or hostname.
     "username":"sipuser",            // The sip user name for this room.
-    "password":"sippassword"         // The sip password for this room.
+    "password":"sippassword",        // The sip password for this room.
+    "transport":"udp"                // The sip transport for this room, udp / tcp / tls.
   }
 }
 
@@ -85,7 +86,8 @@ object(RoomConfig)::
   "sip": {                              // The sip connectivity setting for room, set this to null when disabled.
     "sipServer":string(SipServerURL),   // The sip server's IP or hostname.
     "username":string(SipUserID),       // The sip user id for this room.
-    "password":string(SipUserPassword)  // The sip user password for this room.
+    "password":string(SipUserPassword), // The sip user password for this room.
+    "transport":string(SipTransport)    // The sip user transport for this room, udp / tcp / tls.
   }
   | false
 }

@@ -178,6 +178,7 @@ var Conference = function (rpcClient, selfRpcId) {
    *    sipServer: string(SipServerURL),
    *    username: string(SipUserID),
    *    password: string(SipUserPassword)
+   *    transport: string(SipTransport)
    *  } | false
    * }
    */

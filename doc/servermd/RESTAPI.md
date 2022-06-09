@@ -247,7 +247,8 @@ Data Model:<br>
     object(Sip): {
       sipServer: string,    // host or IP address for the SIP server
       username: string,     // username of SIP account
-      password: string      // password of SIP account
+      password: string,     // password of SIP account
+      transport: string     // transport of SIP ua
     }
 Resources:<br>
 

@@ -582,7 +582,8 @@ function restUpdateRoom() {
         sip: {
             sipServer: "10.239.44.36",
             username: "jp1",
-            password: "123"
+            password: "123",
+            transport: "udp"
         },
 
     };

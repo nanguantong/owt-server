@@ -586,12 +586,13 @@ module.exports = function (rpcC, selfRpcId, parentRpcId, clusterWorkerIP) {
             return callback('callback', 'error', 'Invalid sip password');
         }
 
-        if (typeof options.sip_transport !== 'string' || options.sip_transport === '') {
+        if (options.sip_transport && typeof options.sip_transport !== 'string') {
             log.error('Invalid sip transport');
             return callback('callback', 'error', 'Invalid sip transport');
         }
 
         options.sip_passwd = (options.sip_passwd ? options.sip_passwd : '');
+        options.sip_transport = (options.sip_transport ? options.sip_transport : 'udp');
 
         if (gateway) {
             log.info('SipGateway already exists, ignore init request.');

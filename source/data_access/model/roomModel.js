@@ -163,7 +163,8 @@ var RoomSchema = new Schema({
         } catch (e) {}
         return ret;
       }
-    }
+    },
+    transport: String
   },
   notifying: {
     participantActivities: { type: Boolean, default: true },

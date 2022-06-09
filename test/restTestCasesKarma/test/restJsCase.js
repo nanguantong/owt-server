@@ -331,6 +331,7 @@ describe('rest_api_case', function () {
                     expect(createRoom.sip.sipServer).to.equal(createRoomPars.options.sip.sipServer);
                     expect(createRoom.sip.username).to.equal(createRoomPars.options.sip.username);
                     expect(createRoom.sip.password).to.equal(createRoomPars.options.sip.password);
+                    expect(createRoom.sip.transport).to.equal(createRoomPars.options.sip.transport);
                     deleteRoom(roomId)
                         .then(() => {
                             done();
@@ -428,6 +429,7 @@ describe('rest_api_case', function () {
                     expect(updateRoom.sip.sipServer).to.equal(updateRoomPars.sip.sipServer);
                     expect(updateRoom.sip.username).to.equal(updateRoomPars.sip.username);
                     expect(updateRoom.sip.password).to.equal(updateRoomPars.sip.password);
+                    expect(updateRoom.sip.transport).to.equal(updateRoomPars.sip.transport);
                     roomId = updateRoom._id;
                     deleteRoom(roomId)
                         .then(() => {
