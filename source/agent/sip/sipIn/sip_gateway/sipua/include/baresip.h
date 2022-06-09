@@ -21,6 +21,7 @@ struct sa;
 struct sdp_media;
 struct sdp_session;
 struct sip_msg;
+struct stream;
 struct ua;
 struct vidframe;
 struct vidrect;

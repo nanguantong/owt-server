@@ -68,8 +68,10 @@ static struct config core_config = {
 		{512000, 2048000},
 		true,
 		false,
+		JBUF_OFF,
 		{0, 0},/*{5, 10},*/
-		false
+		false,
+		0
 	},
 
 	/* Network */

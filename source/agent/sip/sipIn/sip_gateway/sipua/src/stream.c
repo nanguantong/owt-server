@@ -267,7 +267,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	err = stream_sock_alloc(s, call_af(call));
 	if (err) {
 		warning("stream: failed to create socket for media '%s'"
-			" (%m)\n", name, err);
+			" (%m)\n", media_name(name), err);
 		goto out;
 	}
 
