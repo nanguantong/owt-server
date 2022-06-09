@@ -47,7 +47,6 @@
       '<!@(pkg-config --libs libavcodec)',
       '<!@(pkg-config --libs libavformat)',
       '<!@(pkg-config --libs libavfilter)',
-      '<!@(pkg-config --libs fdk-aac)',
       '-L$(DEFAULT_DEPENDENCY_PATH)/lib',
       '-lSvtHevcEnc',
     ],

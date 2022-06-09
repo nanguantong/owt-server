@@ -219,7 +219,7 @@ RUN cd /home && git clone --depth=1 -b ${OWT_BRANCH} ${OWT_SDK_REPO} && cd owt-c
     #Build and pack owt
     export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/local/include/svt-hevc && \
     cd ${SERVER_PATH} && export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig && ./scripts/build.js -t mcu -lp /usr/local/ssl/lib -ip /usr/local/ssl/include -r -c
-RUN cd ${SERVER_PATH} && ./scripts/pack.js -t all --install-module --no-pseudo --app-path /home/owt-client-javascript/dist/samples/conference
+RUN cd ${SERVER_PATH} && ./scripts/pack.js -t all --with-ffmpeg --install-module --no-pseudo --app-path /home/owt-client-javascript/dist/samples/conference
 
 
 FROM ubuntu:18.04 AS owt-run

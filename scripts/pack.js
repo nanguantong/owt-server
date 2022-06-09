@@ -470,6 +470,7 @@ function isLibAllowed(libSrc) {
   if (!options['archive'] || options['with-ffmpeg']) {
     whiteList.push('libav');
     whiteList.push('libsw');
+    whiteList.push('libfdk-aac');
     if (osType.includes('centos') || (osType.includes('ubuntu') && osType.includes('20.04'))) {
       whiteList.push('libboost');
     }
@@ -500,14 +501,14 @@ function filterLib(libSrc) {
   if (libName.indexOf('libdrm') === 0) return false;
 
   // Remove libfdk-aac
-  if (libName.indexOf('libfdk-aac') === 0 && options['archive']) return false;
-  // Remove libav/ffmpeg if aac
-  if (libName.indexOf('libav') === 0 || libName.indexOf('libsw') === 0) {
-    let output = execSync(`ldd ${libSrc}`).toString();
-    if (options['archive'] && output.indexOf('libfdk-aac') >= 0) {
-      return false;
-    }
-  }
+  // if (libName.indexOf('libfdk-aac') === 0 && options['archive']) return false;
+  // // Remove libav/ffmpeg if aac
+  // if (libName.indexOf('libav') === 0 || libName.indexOf('libsw') === 0) {
+  //   let output = execSync(`ldd ${libSrc}`).toString();
+  //   if (options['archive'] && output.indexOf('libfdk-aac') >= 0) {
+  //     return false;
+  //   }
+  // }
   // Remove glib
   if (libName.indexOf('libgio-2.0') === 0) return false;
   if (libName.indexOf('libglib-2.0') === 0) return false;

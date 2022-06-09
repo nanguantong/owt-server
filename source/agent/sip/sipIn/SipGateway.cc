@@ -44,7 +44,7 @@ void SipGateway::New(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
-  bool preferIpv6;
+  bool preferIpv6 = false;
   uint32_t rtpPortMin = 0, rtpPortMax = 0, rtpTimeout = 0;
   std::string mnat;
   if (args.Length() > 0 && args[0]->IsObject()) {

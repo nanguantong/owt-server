@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-usage="Usage: daemon.sh (start|stop|status) (management-api|{purpose}-agent|app)"
+usage="Usage: daemon.sh (start|stop|restart|status) (management-api|{purpose}-agent|app)"
 
 # if no args specified, show usage
 if [ $# -le 1 ]; then
