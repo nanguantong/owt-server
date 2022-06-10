@@ -49,8 +49,8 @@ void SipGateway::New(const FunctionCallbackInfo<Value>& args) {
   std::string mnat;
   if (args.Length() > 0 && args[0]->IsObject()) {
     Local<String> keyPreferIpv6 = Nan::New("prefer_ipv6").ToLocalChecked();
-    Local<String> keyRtpPortMin = Nan::New("rtp_port_min").ToLocalChecked();
-    Local<String> keyRtpPortMax = Nan::New("rtp_port_max").ToLocalChecked();
+    Local<String> keyRtpPortMin = Nan::New("minport").ToLocalChecked(); // rtp_port_min
+    Local<String> keyRtpPortMax = Nan::New("maxport").ToLocalChecked(); // rtp_port_max
     Local<String> keyRtpTimeout = Nan::New("rtp_timeout").ToLocalChecked();
     Local<String> keyMnat = Nan::New("mnat").ToLocalChecked();
 
