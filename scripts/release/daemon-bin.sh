@@ -202,7 +202,7 @@ case $startStop in
 
      ${0} stop $command
      ${0} start $command
-     ;;    
+     ;;
 
   (stop)
     if [ -f $pid ]; then

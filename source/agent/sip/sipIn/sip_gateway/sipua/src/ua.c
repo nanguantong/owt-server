@@ -889,6 +889,19 @@ void ua_presence_status_set(struct ua *ua, const enum presence_status status)
 
 
 /**
+ * Get Account of a User-Agent
+ *
+ * @param ua User-Agent
+ *
+ * @return Pointer to UA's account
+ */
+struct account *ua_account(const struct ua *ua)
+{
+	return ua ? ua->acc : NULL;
+}
+
+
+/**
  * Get the outbound SIP proxy of a User-Agent
  *
  * @param ua User-Agent object
