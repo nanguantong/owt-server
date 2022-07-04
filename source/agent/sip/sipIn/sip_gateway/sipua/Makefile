@@ -77,6 +77,8 @@ LIBDIR     := $(PREFIX)/lib
 MOD_PATH   := $(LIBDIR)/$(PROJECT)/modules
 SHARE_PATH := $(PREFIX)/share/$(PROJECT)
 CFLAGS     += -DPREFIX=\"$(PREFIX)\"
+CFLAGS     += -DMOD_PATH=\"$(MOD_PATH)\"
+CFLAGS     += -DSHARE_PATH=\"$(SHARE_PATH)\"
 
 
 #all: sanity $(MOD_BINS) $(BIN)
@@ -95,6 +97,7 @@ OBJS      += $(patsubst %.S,$(BUILD)/src/%.o,$(filter %.S,$(SRCS)))
 
 APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o,$(APP_SRCS)) $(MOD_OBJS)
 
+LIB_OBJS  := $(OBJS) $(MOD_OBJS)
 
 # Static build: include module linker-flags in binary
 ifneq ($(STATIC),)
@@ -149,6 +152,10 @@ $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
+$(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
+	@echo "  CXX     $@"
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
+
 $(BUILD)/%.o: %.m $(BUILD) Makefile $(APP_MK)
 	@echo "  OC      $@"
 	@$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
@@ -186,6 +193,8 @@ install-static: $(STATICLIB)
 uninstall:
 	@rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 	@rm -rf $(DESTDIR)$(MOD_PATH)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/$(SHARED)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/$(STATICLIB)
 
 .PHONY: clean
 clean:

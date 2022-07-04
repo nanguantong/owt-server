@@ -175,8 +175,10 @@ void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, 
 #else
 	cfg->net.af   = AF_INET;
 #endif
-	cfg->avt.rtp_ports.min = rtp_port_min;
-	cfg->avt.rtp_ports.max = rtp_port_max;
+	if (rtp_port_min != 0 && rtp_port_max != 0) {
+		cfg->avt.rtp_ports.min = rtp_port_min;
+		cfg->avt.rtp_ports.max = rtp_port_max;
+	}
 	cfg->avt.rtp_timeout = rtp_timeout;
 }
 
