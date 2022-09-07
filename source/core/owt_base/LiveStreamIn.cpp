@@ -452,7 +452,7 @@ LiveStreamIn::LiveStreamIn(const Options& options, EventRegistry* handle)
     else
         av_log_set_level(AV_LOG_QUIET);
 
-    if(isRtsp()) {
+    if (isRtsp()) {
         if (options.transport.compare("udp") == 0) {
             uint32_t buffer_size = options.bufferSize > 0 ? options.bufferSize : DEFAULT_UDP_BUF_SIZE;
             char buf[256];

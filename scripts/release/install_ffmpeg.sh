@@ -89,7 +89,7 @@ install_ffmpeg(){
   tar xf ${SRC}
   pushd ${DIR} >/dev/null
   CFLAGS=-fPIC ./configure --prefix=${PREFIX_DIR} --enable-shared \
-    --disable-static --disable-libvpx --disable-vaapi --enable-libfreetype --enable-libfdk-aac --enable-nonfree
+    --disable-static --disable-libvpx --disable-vaapi --enable-libfreetype --enable-libfdk-aac --enable-openssl --enable-nonfree
   make -j4 -s V=0 && make install
   popd
   popd
