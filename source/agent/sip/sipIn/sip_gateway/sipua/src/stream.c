@@ -376,7 +376,7 @@ static void stream_start_keepalive(struct stream *s)
 	if (!s)
 		return;
 
-        uaccount = ua_prm(call_get_ua(s->call));
+	uaccount = ua_prm(call_get_ua(s->call));
 	if (uaccount)
 		rtpkeep = uaccount->rtpkeep;
 

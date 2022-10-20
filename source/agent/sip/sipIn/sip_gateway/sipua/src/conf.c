@@ -172,6 +172,9 @@ static int load_module(const struct pl *modpath, const struct pl *name)
 }
 #endif
 
+extern struct mod_export stun;
+extern struct mod_export ice;
+
 int load_modules(void/*const char *modpath*/)
 {
 	int err = 0;
@@ -183,6 +186,9 @@ int load_modules(void/*const char *modpath*/)
 */
 	register_audio_codecs();
 	register_video_codecs();
+
+	stun.init();
+	ice.init();
 
     /*pl_set_str(&name, "stun.so");
 	err = load_module(&path, &name);

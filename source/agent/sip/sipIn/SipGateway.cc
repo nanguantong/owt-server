@@ -45,14 +45,16 @@ void SipGateway::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope scope(isolate);
 
   bool preferIpv6 = false;
-  uint32_t rtpPortMin = 0, rtpPortMax = 0, rtpTimeout = 0;
-  std::string mnat;
+  uint32_t rtpPortMin = 0, rtpPortMax = 0, rtpTimeout = 0, stunPort = 0;
+  std::string mnat, stunServer;
   if (args.Length() > 0 && args[0]->IsObject()) {
     Local<String> keyPreferIpv6 = Nan::New("prefer_ipv6").ToLocalChecked();
     Local<String> keyRtpPortMin = Nan::New("minport").ToLocalChecked(); // rtp_port_min
     Local<String> keyRtpPortMax = Nan::New("maxport").ToLocalChecked(); // rtp_port_max
     Local<String> keyRtpTimeout = Nan::New("rtp_timeout").ToLocalChecked();
     Local<String> keyMnat = Nan::New("mnat").ToLocalChecked();
+    Local<String> keyStunServer = Nan::New("stunserver").ToLocalChecked();
+    Local<String> keyStunPort = Nan::New("stunport").ToLocalChecked();
 
     Local<Object> options = Nan::To<v8::Object>(args[0]).ToLocalChecked();
     if (Nan::Has(options, keyPreferIpv6).FromMaybe(false))
@@ -65,11 +67,15 @@ void SipGateway::New(const FunctionCallbackInfo<Value>& args) {
       rtpTimeout = Nan::To<uint32_t>(Nan::Get(options, keyRtpTimeout).ToLocalChecked()).FromJust();
     if (Nan::Has(options, keyMnat).FromMaybe(false))
       mnat = getString(Nan::Get(options, keyMnat).ToLocalChecked());
+    if (Nan::Has(options, keyStunServer).FromMaybe(false))
+      stunServer = getString(Nan::Get(options, keyStunServer).ToLocalChecked());
+    if (Nan::Has(options, keyStunPort).FromMaybe(false))
+      stunPort = Nan::To<uint32_t>(Nan::Get(options, keyStunPort).ToLocalChecked()).FromJust();
   }
 
   SipGateway* obj = new SipGateway();
   obj->me = new sip_gateway::SipGateway();
-  obj->me->init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat);
+  obj->me->init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat, stunServer, stunPort);
 
   obj->me->setEventRegistry(obj);
   obj->Wrap(args.This());

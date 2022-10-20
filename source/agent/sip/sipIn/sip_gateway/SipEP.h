@@ -39,7 +39,7 @@ public:
     SipEP(SipEPOwner* owner);
     virtual ~SipEP();
 
-    void init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat);
+    void init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat, const std::string& stunServer, uint32_t stunPort);
     bool sipRegister(const std::string& sipServerAddr, const std::string& userName,
                      const std::string& password, const std::string& displayName,
                      const std::string& transport);

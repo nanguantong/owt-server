@@ -50,6 +50,8 @@ module.exports.load = () => {
     config.sip.prefer_ipv6 = config.sip.prefer_ipv6 || false;
     config.sip.rtp_timeout = config.sip.rtp_timeout || 0;
     config.sip.mnat = config.sip.mnat || '';
+    config.sip.stunserver = config.sip.stunserver || '';
+    config.sip.stunport = config.sip.stunport || 0;
 
     return config;
   } catch (e) {

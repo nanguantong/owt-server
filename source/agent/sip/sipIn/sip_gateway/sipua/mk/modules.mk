@@ -28,8 +28,9 @@ endif
 
 # ------------------------------------------------------------------------- #
 
-#MODULES   += $(EXTRA_MODULES)
-#MODULES   += stun turn ice
+MODULES   += $(EXTRA_MODULES)
+MODULES   += stun turn
+#ice
 
 #ifneq ($(USE_SRTP),)
 #MODULES   += srtp

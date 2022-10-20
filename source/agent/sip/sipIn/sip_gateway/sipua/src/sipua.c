@@ -28,6 +28,8 @@ static pthread_t dnsc_thid;
 
 static sipua_bool sipua_prefer_ipv6 = false;
 static char sipua_mnat[16];
+static char sipua_stunserver[128];
+static uint32_t sipua_stunport;
 
 static struct list sipual;               /**< List of SIP UAs(struct ua_entity) */
 
@@ -55,7 +57,7 @@ static int construct_uag(struct uag **uagp, struct new_sipua_th_paras *params)
 	char account_str[512]={0};
 	bool use_udp, use_tcp, use_tls;
 
-    sprintf(account_str, "%.128s <sip:%.128s:%.64s@%.128s>;medianat=%.16s\n", params->disp_name, params->user_name, params->password, params->sip_server, sipua_mnat);
+    sprintf(account_str, "%.128s <sip:%.128s:%.64s@%.128s>;medianat=%.16s;stunserver=%.128s;rtpkeep=zero;\n", params->disp_name, params->user_name, params->password, params->sip_server, sipua_mnat, sipua_stunserver);
 
 	if (u32mask_enabled(params->transports, SIP_TRANSP_UDP)) {
 		use_udp = true;
@@ -161,7 +163,7 @@ static void dnsc_delete(void)
 	pthread_join(dnsc_thid, NULL);
 }
 
-void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, uint32_t rtp_timeout, const char *mnat)
+void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, uint32_t rtp_timeout, const char *mnat, const char *stun_server, uint32_t stun_port)
 {
 	struct config *cfg = conf_config();
 
@@ -169,6 +171,10 @@ void sipua_init(bool prefer_ipv6, uint32_t rtp_port_min, uint32_t rtp_port_max, 
 	if (str_isset(mnat)) {
 		strncpy(sipua_mnat, mnat, sizeof(sipua_mnat) - 1);
 	}
+	if (str_isset(stun_server)) {
+		strncpy(sipua_stunserver, stun_server, sizeof(stun_server) - 1);
+	}
+	sipua_stunport = stun_port;
 
 #if HAVE_INET6
 	cfg->net.af   = prefer_ipv6 ? AF_INET6 : AF_INET;

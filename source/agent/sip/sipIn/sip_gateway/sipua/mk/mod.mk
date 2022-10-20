@@ -25,6 +25,8 @@ $(MOD)_NAME := $(MOD)
 modulename = $(lastword $(subst /, ,$(dir $1)))
 
 
+STATIC    := yes
+
 ifeq ($(STATIC),)
 
 #

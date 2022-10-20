@@ -23,6 +23,7 @@ struct mnat_sess {
 	mnat_estab_h *estabh;
 	void *arg;
 	int mediac;
+	struct sdp_session *ss;
 };
 
 
@@ -37,6 +38,7 @@ struct mnat_media {
 	void *sock1;
 	void *sock2;
 	int proto;
+	struct sdp_session *ss;
 };
 
 
@@ -71,6 +73,7 @@ static void mapped_handler1(int err, const struct sa *map_addr, void *arg)
 
 	if (!err) {
 
+		sdp_session_set_laddr(m->ss, map_addr);
 		sdp_media_set_laddr(m->sdpm, map_addr);
 
 		m->addr1 = *map_addr;
@@ -145,6 +148,7 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 
 		struct mnat_media *m = le->data;
 
+		m->ss = sess->ss;
 		err = media_start(sess, m);
 		if (err)
 			goto out;
@@ -167,7 +171,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	int err;
 	(void)user;
 	(void)pass;
-	(void)ss;
+	//(void)ss;
 	(void)offerer;
 
 	if (!sessp || !dnsc || !srv || !ss || !estabh)
@@ -182,6 +186,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 	sess->estabh = estabh;
 	sess->arg    = arg;
+	sess->ss = ss;
 
 	err = stun_server_discover(&sess->dnsq, dnsc,
 				   stun_usage_binding, stun_proto_udp,
@@ -217,6 +222,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->sock1 = mem_ref(sock1);
 	m->sock2 = mem_ref(sock2);
 	m->proto = proto;
+	m->ss = sess->ss;
 
 	if (sa_isset(&sess->srv, SA_ALL))
 		err = media_start(sess, m);

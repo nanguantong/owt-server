@@ -49,5 +49,10 @@ prefer_ipv6 = false #default: false
 #Rtp timeout
 rtp_timeout = 0 #default: 0
 
-#Media traversal: stun / turn / ice
+#Media traversal: stun / ice
 mnat = ""
+
+#STUN server IP address and port to be used by the server.
+#if "" is used, the address is discovered locally
+stunport = 0 #default: 0
+stunserver = "" #default: ""

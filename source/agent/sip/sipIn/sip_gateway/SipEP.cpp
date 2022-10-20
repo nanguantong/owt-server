@@ -31,9 +31,9 @@ SipEP::~SipEP()
     }
 }
 
-void SipEP::init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat)
+void SipEP::init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat, const std::string& stunServer, uint32_t stunPort)
 {
-    sipua_init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat.c_str());
+    sipua_init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat.c_str(), stunServer.c_str(), stunPort);
 }
 
 bool SipEP::sipRegister(const std::string& sipServerAddr, const std::string& userName,
