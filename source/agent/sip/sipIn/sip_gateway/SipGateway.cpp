@@ -27,9 +27,9 @@ SipGateway::~SipGateway()
 }
 
 // The main thread
-void SipGateway::init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat)
+void SipGateway::init(bool preferIpv6, uint32_t rtpPortMin, uint32_t rtpPortMax, uint32_t rtpTimeout, const std::string& mnat, const std::string& stunServer, uint32_t stunPort)
 {
-    return m_sipEP->init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat);
+    return m_sipEP->init(preferIpv6, rtpPortMin, rtpPortMax, rtpTimeout, mnat, stunServer, stunPort);
 }
 
 // The main thread
