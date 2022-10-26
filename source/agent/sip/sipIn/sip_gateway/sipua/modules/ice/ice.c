@@ -29,6 +29,12 @@
  */
 
 
+enum {
+	ICE_LAYER = 0,
+	LPREF_INIT = UINT16_MAX / 2
+};
+
+
 struct mnat_sess {
 	struct list medial;
 	struct sa srv;
@@ -540,6 +546,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
+	enum ice_role role;
 	unsigned i;
 	int err = 0;
 
@@ -555,9 +562,19 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->sess  = sess;
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
+	// m->lpref = LPREF_INIT;
+
+	// if (sess->offerer)
+	// 	role = ICE_ROLE_CONTROLLING;
+	// else
+	// 	role = ICE_ROLE_CONTROLLED;
+
 
 	err = icem_alloc(&m->icem, sess->ice, proto, 0,
 			 gather_handler, conncheck_handler, m);
+	// err = icem_alloc(&m->icem, role, proto, 0,
+	// 		 sess->tiebrk, sess->lufrag, sess->lpwd,
+	// 		 conncheck_handler, m);
 	if (err)
 		goto out;
 
@@ -628,6 +645,9 @@ static int update(struct mnat_sess *sess)
 {
 	struct le *le;
 	int err = 0;
+
+	if (!sess)
+		return EINVAL;
 
 	/* SDP session */
 	(void)sdp_session_rattr_apply(sess->sdp, NULL, sdp_attr_handler, sess);
