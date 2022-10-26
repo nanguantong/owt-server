@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # change workdir
-cd /home/owt
+#cd /home/owt
+this=`dirname "$0"`
+this=`cd "$this"; pwd`
+ROOT=`cd "${this}/.."; pwd`
 
 mongourl=localhost/owtdb
 LOG=/dev/null
