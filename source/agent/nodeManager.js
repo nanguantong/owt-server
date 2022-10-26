@@ -235,7 +235,7 @@ module.exports = function (spec, spawnOptions, onNodeAbnormallyQuit, onTaskAdded
     return undefined;
   };
 
-  let  pickInIdle = (room) => {
+  let pickInIdle = (room) => {
       if (idle_nodes.length < 1) {
         log.error('getNode error:', 'No available node');
         return undefined;
