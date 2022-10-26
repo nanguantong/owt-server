@@ -20,7 +20,7 @@ get_nvm_node() {
     ${SUDO} apt-get install wget -y
   fi
   local VERSION="v16.15.0"
-  wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash
+  wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.39.0/install.sh | bash
   . ~/.nvm/nvm.sh
   nvm install ${VERSION}
 }
