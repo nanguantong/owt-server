@@ -24,7 +24,7 @@ function checkProfile(callback) {
       $('#myModal').modal('show');
       return;
     } else if (err) {
-      notify('error', '»ñÈ¡·şÎñĞÅÏ¢Ê§°Ü', err);
+      notify('error', 'è·å–æœåŠ¡ä¿¡æ¯å¤±è´¥', err);
       return;
     } else {
       var myService = JSON.parse(text);
@@ -43,7 +43,7 @@ $('button#clearCookie').click(function() {
   restApi = ManagementApi.init();
   restApi.logout(function(err) {
     if (err) {
-      notify('error', 'ÍË³öÊ§°Ü', err);
+      notify('error', 'é€€å‡ºå¤±è´¥', err);
       return;
     }
   });
@@ -63,7 +63,7 @@ $('button#saveServiceInfo').click(function() {
     restApi = ManagementApi.init();
     restApi.login(serviceId, serviceKey, function(err) {
       if (err) {
-        notify('error', 'µÇÂ¼Ê§°Ü', err);
+        notify('error', 'ç™»å½•å¤±è´¥', err);
         return;
       }
       document.getElementById("inputKey").value = "";
@@ -86,7 +86,7 @@ function judgePermissions(flag) {
       $(".overview").hide();
       $(".room").show();
       $(".runtime").hide();
-      $(".page-header").text("ËùÓĞ·¿¼ä");
+      $(".page-header").text("æ‰€æœ‰æˆ¿é—´");
       mode = ENUMERATE.ROOM;
     }
   });
@@ -106,15 +106,15 @@ function a_click(nowList, dom) {
   }
   switch (nowList) {
     case ENUMERATE.SERVICE:
-      title.text("ËùÓĞ·şÎñ");
+      title.text("æ‰€æœ‰æœåŠ¡");
       checkProfile(renderService);
       break;
     case ENUMERATE.ROOM:
-      title.text("ËùÓĞ·¿¼ä");
+      title.text("æ‰€æœ‰æˆ¿é—´");
       checkProfile(renderRoom);
       break;
     case ENUMERATE.RUNTIME:
-      title.text("MCU ÔËĞĞ");
+      title.text("MCU è¿è¡Œ");
       checkProfile(renderCluster);
       break;
   }
