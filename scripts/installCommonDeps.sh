@@ -562,9 +562,9 @@ install_libre() {
   if [ -d $LIB_DIR ]; then
     pushd ${LIB_DIR} >/dev/null
     rm -rf re
-    git clone https://github.com/creytiv/re.git
+    git clone https://github.com/nanguantong/re-nan.git
     pushd re >/dev/null
-    git checkout v0.5.0
+    git checkout test
     make SYSROOT_ALT=${PREFIX_DIR} RELEASE=1
     make install SYSROOT_ALT=${PREFIX_DIR} RELEASE=1 PREFIX=${PREFIX_DIR}
     popd >/dev/null
