@@ -759,10 +759,11 @@ static inline bool h264_is_keyframe(int type)
  */
 
 #ifdef STATIC
-#define DECL_EXPORTS(name) exports_ ##name
+//#define DECL_EXPORTS(name) exports_ ##name
 #else
-#define DECL_EXPORTS(name) exports
+//#define DECL_EXPORTS(name) exports
 #endif
+#define DECL_EXPORTS(name) name
 
 
 int module_preload(const char *module);

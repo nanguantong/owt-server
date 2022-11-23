@@ -157,7 +157,7 @@ class WrtcStream extends EventEmitter {
       sender = this.videoFrameConstructor.source();
       sender.parent = this.videoFrameConstructor;
     } else {
-      log.error('sender error');
+      log.error('sender error', track);
     }
     if (sender) {
       sender.addDestination = (track, dest) => {
